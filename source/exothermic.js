@@ -1,6 +1,18 @@
 const possibleEvents = ['value']
 const rootKey = Symbol('Root of the state tree')
 
+const timeout = (fn, delay) => {
+  if (delay === 0) {
+    setImmediate(fn)
+  }
+  if (delay < 0) {
+    fn()
+  }
+  if (delay > 0) {
+    setTimeout(fn, delay)
+  }
+}
+
 const eventEmitter = events => {
   const listeners =
     events.reduce((obj, key) => {
@@ -66,7 +78,7 @@ const firebasechild = (parent, key, options) => {
     ...emitter,
     on: (event, fn) => {
       if (event === 'value') {
-        setTimeout(_ => fn(snapshot()), delay)
+        timeout(_ => fn(snapshot()), delay)
       }
       return emitter.on(event, fn)
     },
