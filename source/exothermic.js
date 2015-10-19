@@ -1,3 +1,5 @@
+import EventEmitter from './EventEmitter'
+
 const possibleEvents = ['value']
 const rootKey = Symbol('Root of the state tree')
 
@@ -13,57 +15,11 @@ const timeout = (fn, delay) => {
   }
 }
 
-const eventEmitter = events => {
-  const listeners =
-    events.reduce((obj, key) => {
-      obj[key] = []
-      return obj
-    }, {})
 
-
-  const ensureEvent = event => {
-    if (listeners[event] === undefined) {
-      throw new Error(`Event ${event} does not exist on this emitter`)
-    }
-  }
-
-  const methods = {
-    on: (event, fn) => {
-      ensureEvent(event)
-      listeners[event] = listeners[event].concat([fn])
-      return fn
-    },
-    off: (event, fn) => {
-      ensureEvent(event)
-      listeners[event] = listeners[event].filter(x => x !== fn)
-    },
-    once: (event, fn) => {
-      const unbindFn = methods.on(event, x => {
-        fn(x)
-        methods.off(event, unbindFn)
-      })
-    },
-
-    emit: (event, ...args) => {
-      ensureEvent(event)
-      listeners[event].forEach(listener => listener(...args))
-    },
-    listeners: event => {
-      ensureEvent(event)
-      return listeners[event]
-    },
-    listenerCount: event => {
-      ensureEvent(event)
-      return listeners[event].length
-    },
-  }
-
-  return methods
-}
 
 const firebasechild = (parent, key, options) => {
   const {delay} = options
-  const emitter = eventEmitter(possibleEvents)
+  const emitter = EventEmitter(possibleEvents)
   const snapshot = () => {
     const val = parent.get(key)
     return {

@@ -1,7 +1,10 @@
 'use strict';
 
-jest.dontMock('../exothermic.js');
-const exothermic = require('../exothermic.js')
+jest
+  .dontMock('../exothermic')
+  .dontMock('../EventEmitter')
+
+const exothermic = require('../exothermic')
 
 const data = {
   users: {
