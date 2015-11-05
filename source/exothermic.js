@@ -71,9 +71,16 @@ const firebasechild = (parent, key, options) => {
     },
 
     // Implementation
-    __get: prop => (
-      parent.__get(key)[prop]
-    ),
+    __get: prop => {
+      const me = parent.__get(key)
+      const val = typeof me === 'object' && me !== null ? me[prop] : {}
+      return (
+        val === undefined ||
+        (typeof val === 'object' && Object.keys(val) === 0)
+        ? null
+        : val
+      )
+    },
   }
   return methods
 }

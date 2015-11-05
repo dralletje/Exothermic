@@ -97,12 +97,10 @@ describe('exothermic without delay', () => {
     expectVal(handler, 1).toEqual(20)
   })
 
-  // it('should mkdir -p like when setting deep on nonexisting', () => {
-  //   const handler = jest.genMockFunction()
-  //   firebase.child('users/jake').on('value', handler)
-  //   firebase.child('users/jake/name').set('jake')
-  //   expectVal(handler, 1).toEqual({name: 'jake'})
-  // })
-
-
+  it('should mkdir -p like when setting deep on nonexisting', () => {
+    const handler = jest.genMockFunction()
+    firebase.child('users/jake').on('value', handler)
+    firebase.child('users/jake/name').set('jake')
+    expectVal(handler, 1).toEqual({name: 'jake'})
+  })
 })
