@@ -13,6 +13,7 @@ const data = {
       age: 19,
     },
   },
+  empty: {},
 }
 
 const expectVal = (handler, call = 0) => {
@@ -102,5 +103,17 @@ describe('exothermic without delay', () => {
     firebase.child('users/jake').on('value', handler)
     firebase.child('users/jake/name').set('jake')
     expectVal(handler, 1).toEqual({name: 'jake'})
+  })
+
+  it('should return null when asking for non-existing key', () => {
+    const handler = jest.genMockFunction()
+    firebase.child('this/key/does/not/exist').on('value', handler)
+    expectVal(handler).toEqual(null)
+  })
+
+  it('should return null when asking for an empty object', () => {
+    const handler = jest.genMockFunction()
+    firebase.child('empty').on('value', handler)
+    expectVal(handler).toEqual(null)
   })
 })

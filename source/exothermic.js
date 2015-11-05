@@ -74,12 +74,16 @@ const firebasechild = (parent, key, options) => {
     __get: prop => {
       const me = parent.__get(key)
       const val = typeof me === 'object' && me !== null ? me[prop] : {}
+
       return (
         val === undefined ||
-        (typeof val === 'object' && Object.keys(val) === 0)
+        (typeof val === 'object' && Object.keys(val).length === 0)
         ? null
         : val
       )
+    },
+    __emitWhenChanged: oldValue => {
+      emitter.emit('value', snapshot())
     },
   }
   return methods
