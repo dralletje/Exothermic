@@ -1,6 +1,6 @@
 {
   "name": "exothermic",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Firebase.js mock with javascript object input",
   "main": "index.js",
   "dependencies": {
@@ -30,7 +30,14 @@
   "homepage": "https://github.com/dralletje/exothermic#readme",
   "jest": {
     "scriptPreprocessor": "<rootDir>/node_modules/babel-jest",
-    "testFileExtensions": ["es6", "js"],
-    "moduleFileExtensions": ["js", "json", "es6"]
+    "testFileExtensions": [
+      "es6",
+      "js"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "es6"
+    ]
   }
 }
