@@ -21,7 +21,7 @@ const firebasechild = (parent, key, options) => {
   const {delay} = options
   const emitter = EventEmitter(possibleEvents)
   const snapshot = () => {
-    const val = parent.get(key)
+    const val = parent.__get(key)
     return {
       val: () => val,
       key: () => key,
@@ -29,6 +29,10 @@ const firebasechild = (parent, key, options) => {
   }
 
   let children = {}
+
+  // If parent changes, you change too
+  //@TODO: Maybe compare to old value? No?
+  parent.on('value', () => emitter.emit('value', snapshot()))
 
   const methods = {
     ...emitter,
@@ -59,7 +63,7 @@ const firebasechild = (parent, key, options) => {
     update: value => {
       parent.update({
         [key]: {
-          ...parent.get(key),
+          ...parent.__get(key),
           ...value,
         },
       })
@@ -67,8 +71,8 @@ const firebasechild = (parent, key, options) => {
     },
 
     // Implementation
-    get: prop => (
-      parent.get(key)[prop]
+    __get: prop => (
+      parent.__get(key)[prop]
     ),
   }
   return methods
@@ -78,7 +82,7 @@ const exothermic = (initdata, {delay = 0} = {}) => {
   let data = initdata
 
   const root = {
-    get: _ => {
+    __get: _ => {
       return data
     },
     update: value => {
@@ -87,6 +91,7 @@ const exothermic = (initdata, {delay = 0} = {}) => {
         ...value[rootKey],
       }
     },
+    on: () => {},
   }
 
   return firebasechild(root, rootKey, {delay})
