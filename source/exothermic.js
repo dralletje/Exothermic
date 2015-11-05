@@ -77,6 +77,7 @@ const firebasechild = (parent, key, options) => {
 
       return (
         val === undefined ||
+        val === null ||
         (typeof val === 'object' && Object.keys(val).length === 0)
         ? null
         : val
