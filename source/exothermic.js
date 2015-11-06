@@ -72,7 +72,9 @@ const firebasechild = (parent, key, options) => {
     set: set,
     update: update,
     push: value => {
-      update({ [pushId()]: value })
+      const id = pushId()
+      update({ [id]: value })
+      return id
     },
 
     // Implementation
