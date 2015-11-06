@@ -3,6 +3,7 @@
 jest
   .dontMock('../exothermic')
   .dontMock('../EventEmitter')
+  .dontMock('../pushId')
 
 const exothermic = require('../exothermic')
 
@@ -115,5 +116,16 @@ describe('exothermic without delay', () => {
     const handler = jest.genMockFunction()
     firebase.child('empty').on('value', handler)
     expectVal(handler).toEqual(null)
+  })
+
+  it('should create unique id\'s', () => {
+    const empty = firebase.child('empty')
+    empty.push('1')
+    empty.push('2')
+    empty.push('3')
+
+    const handler = jest.genMockFunction()
+    empty.on('value', handler)
+    expect(Object.keys(handler.mock.calls[0][0].val()).length).toBe(3)
   })
 })

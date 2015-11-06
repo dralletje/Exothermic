@@ -1,4 +1,5 @@
 import EventEmitter from './EventEmitter'
+import pushId from './pushId'
 
 const possibleEvents = ['value']
 const rootKey = Symbol('Root of the state tree')
@@ -34,6 +35,18 @@ const firebasechild = (parent, key, options) => {
   //@TODO: Maybe compare to old value? No?
   parent.on('value', () => emitter.emit('value', snapshot()))
 
+  const set = value => {
+    parent.update({ [key]: value })
+    emitter.emit('value', snapshot())
+  }
+
+  const update = value => {
+    set({
+      ...parent.__get(key),
+      ...value,
+    })
+  }
+
   const methods = {
     ...emitter,
     on: (event, fn) => {
@@ -56,18 +69,10 @@ const firebasechild = (parent, key, options) => {
       }
       return tail.length === 0 ? child : child.child(tail)
     },
-    set: value => {
-      parent.update({ [key]: value })
-      emitter.emit('value', snapshot())
-    },
-    update: value => {
-      parent.update({
-        [key]: {
-          ...parent.__get(key),
-          ...value,
-        },
-      })
-      emitter.emit('value', snapshot())
+    set: set,
+    update: update,
+    push: value => {
+      update({ [pushId()]: value })
     },
 
     // Implementation
