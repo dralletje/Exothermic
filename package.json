@@ -1,6 +1,6 @@
 {
   "name": "exothermic",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Firebase.js mock with javascript object input",
   "main": "index.js",
   "dependencies": {
