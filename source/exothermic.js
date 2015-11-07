@@ -118,14 +118,23 @@ const exothermic = (initdata, {delay = 0} = {}) => {
   return firebasechild(root, rootKey, {delay})
 }
 
-const exothermicLocalstorage = (initdata, localStorage, {delay = 0} = {}) => {
-  const getData = () => JSON.parse(localStorage.getItem('exothermic'))
-  const setData = data => localStorage.setItem('exothermic', JSON.stringify(data))
+const exothermicLocalstorage = (initdata, window, {delay = 0} = {}) => {
+  const getData = () => JSON.parse(window.localStorage.getItem('exothermic'))
+  const setData = data => window.localStorage.setItem('exothermic', JSON.stringify(data))
+  const emitter = EventEmitter(possibleEvents)
 
   // Initialize
   setData(initdata)
+  // Listen for storage change
+  window.addEventListener('storage', event => {
+    if (event.key !== 'exothermic') {
+      return
+    }
+    emitter.emit('value') // Not even going to try to emit a snapshot here
+  })
 
   const root = {
+    ...emitter,
     __get: getData,
     update: value => {
       setData({
@@ -133,7 +142,6 @@ const exothermicLocalstorage = (initdata, localStorage, {delay = 0} = {}) => {
         ...value[rootKey],
       })
     },
-    on: () => {},
   }
 
   return firebasechild(root, rootKey, {delay})
