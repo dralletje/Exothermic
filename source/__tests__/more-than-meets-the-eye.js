@@ -129,9 +129,8 @@ describe('exothermic without delay', () => {
     expect(Object.keys(handler.mock.calls[0][0].val()).length).toBe(3)
   })
 
-  it('should return the unique id', () => {
-    const uid = firebase.child('empty').push('randomish value here')
-
+  it('should return the snapshot on push', () => {
+    const uid = firebase.child('empty').push('randomish value here').key()
     const handler = jest.genMockFunction()
     firebase.child(`empty/${uid}`).on('value', handler)
     expectVal(handler).toEqual('randomish value here')

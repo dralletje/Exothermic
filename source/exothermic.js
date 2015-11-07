@@ -16,17 +16,19 @@ const timeout = (fn, delay) => {
   }
 }
 
-
+const createSnapshot = ({key, value}) => {
+  return {
+    val: () => value,
+    key: () => key,
+  }
+}
 
 const firebasechild = (parent, key, options) => {
   const {delay} = options
   const emitter = EventEmitter(possibleEvents)
   const snapshot = () => {
-    const val = parent.__get(key)
-    return {
-      val: () => val,
-      key: () => key,
-    }
+    const value = parent.__get(key)
+    return createSnapshot({key, value})
   }
 
   let children = {}
@@ -74,7 +76,7 @@ const firebasechild = (parent, key, options) => {
     push: value => {
       const id = pushId()
       update({ [id]: value })
-      return id
+      return createSnapshot({key: id, value})
     },
 
     // Implementation
