@@ -14,7 +14,7 @@
     "jest-cli": "^0.5.10"
   },
   "scripts": {
-    "test": "BABEL_JEST_STAGE=0 ./node_modules/.bin/jest",
+    "test": "BABEL_JEST_STAGE=0 ./node_modules/.bin/jest ./source",
     "build": "./node_modules/.bin/babel --stage 0 source -d build",
     "prepublish": "npm run build"
   },
