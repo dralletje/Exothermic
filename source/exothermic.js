@@ -118,4 +118,26 @@ const exothermic = (initdata, {delay = 0} = {}) => {
   return firebasechild(root, rootKey, {delay})
 }
 
+const exothermicLocalstorage = (initdata, localStorage, {delay = 0} = {}) => {
+  const getData = () => JSON.parse(localStorage.getItem('exothermic'))
+  const setData = data => localStorage.setItem('exothermic', JSON.stringify(data))
+
+  // Initialize
+  setData(initdata)
+
+  const root = {
+    __get: getData,
+    update: value => {
+      setData({
+        ...getData(),
+        ...value[rootKey],
+      })
+    },
+    on: () => {},
+  }
+
+  return firebasechild(root, rootKey, {delay})
+}
+
+exothermic.exothermicLocalstorage = exothermicLocalstorage
 export default exothermic
