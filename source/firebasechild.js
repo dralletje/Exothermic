@@ -25,14 +25,10 @@ const firebasechild = (parent, key, options) => {
 
   const snapshot = () => {
     const value = parent.__get(key)
-    return DataSnapshot({key, value})
+    return DataSnapshot({key, value, ref: methods})
   }
 
   let children = {}
-
-  // If parent changes, you change too
-  //@TODO: Maybe compare to old value? No?
-  parent.on('value', () => emitter.emit('value', snapshot()))
 
   const set = (value, cb) => {
     parent.update({ [key]: value })
@@ -79,7 +75,7 @@ const firebasechild = (parent, key, options) => {
     push: (value, cb) => {
       const id = pushId()
       update({ [id]: value }, cb)
-      return DataSnapshot({key: id, value})
+      return DataSnapshot({key: id, value, ref: methods})
     },
 
     // Implementation
@@ -88,6 +84,11 @@ const firebasechild = (parent, key, options) => {
       emitter.emit('value', snapshot())
     },
   }
+
+  // If parent changes, you change too
+  //@TODO: Maybe compare to old value? No?
+  parent.on('value', () => emitter.emit('value', snapshot()))
+
   return methods
 }
 

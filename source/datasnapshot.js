@@ -5,10 +5,12 @@
 import firebaseGetData from './firebaseGetData'
 
 const datasnapshot = ({key, value, ref}) => {
+  //console.log(key, value, ref)
+
   // Useful, although just props would have been better
-  const val = () => value
-  const key = () => key
-  const ref = () => ref
+  const valMethod = () => value
+  const keyMethod = () => key
+  const refMethod = () => ref
 
   // Bullshit
   const exists = () => value !== null
@@ -48,9 +50,11 @@ const datasnapshot = ({key, value, ref}) => {
   }
 
   return {
-    val, key, ref,
-    exportVal: val,
-    name: key,
+    val: valMethod,
+    key: keyMethod,
+    ref: refMethod,
+    exportVal: valMethod,
+    name: keyMethod,
     child, forEach, hasChild,
     hasChildren, numChildren,
     getPriority, exists,
