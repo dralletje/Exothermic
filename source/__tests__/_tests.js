@@ -1,5 +1,11 @@
 'use strict';
 
+jest
+  .dontMock('../exothermic')
+  .dontMock('../EventEmitter')
+  .dontMock('../pushId')
+  .dontMock('../firebasechild')
+
 const data = {
   users: {
     michiel: {
@@ -128,6 +134,20 @@ export default createFirebase => {
       const handler = jest.genMockFunction()
       firebase.child(`empty/${uid}`).on('value', handler)
       expectVal(handler).toEqual('randomish value here')
+    })
+
+    it('should remove a item', () => {
+      const handler = jest.genMockFunction()
+      firebase.child('users/michiel').on('value', handler)
+      firebase.child(`users/michiel`).remove()
+      expectVal(handler, 1).toEqual(null)
+    })
+
+    it('should remove a item and notify it\'s child', () => {
+      const handler = jest.genMockFunction()
+      firebase.child('users/michiel/age').on('value', handler)
+      firebase.child(`users/michiel`).remove()
+      expectVal(handler, 1).toEqual(null)
     })
   })
 }

@@ -1,7 +1,4 @@
 jest
-  .dontMock('../exothermic')
-  .dontMock('../EventEmitter')
-  .dontMock('../pushId')
   .dontMock('./_tests')
 
 const tests = require('./_tests')
