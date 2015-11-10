@@ -54,7 +54,7 @@ const data = {
 
 const expectVal = (handler, call = 0) => {
   expect(handler.mock.calls.length).toBeGreaterThan(call)
-  return expect(handler.mock.calls[call][0].value)
+  return expect(handler.mock.calls[call][0].val())
 }
 
 describe('Localstorage', () => {
