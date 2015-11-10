@@ -90,15 +90,15 @@ Here is a list of the api and what is/isn't supported yet!
 - [ ] TIMESTAMP
 
 **DataSnapshot (Methods)**
-- [ ] exists()
+- [x] exists()
 - [x] val()
-- [ ] child()
-- [ ] forEach()
-- [ ] hasChild()
-- [ ] hasChildren()
+- [x] child()
+- [x] forEach()
+- [x] hasChild()
+- [x] hasChildren()
 - [x] key()
-- [ ] name()
-- [ ] numChildren()
-- [ ] ref()
-- [ ] getPriority()
-- [ ] exportVal()
+- [x] name()
+- [x] numChildren()
+- [x] ref()
+- [ ] getPriority() **Not sure if I am gonna implement this**
+- [x] exportVal()

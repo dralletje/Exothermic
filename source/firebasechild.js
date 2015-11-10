@@ -1,5 +1,8 @@
 import EventEmitter from './EventEmitter'
+import DataSnapshot from './datasnapshot'
+
 import pushId from './pushId'
+import firebaseGetData from './firebaseGetData'
 
 const possibleEvents = ['value']
 
@@ -15,19 +18,14 @@ const timeout = (fn, delay) => {
   }
 }
 
-const createSnapshot = ({key, value}) => {
-  return {
-    val: () => value,
-    key: () => key,
-  }
-}
 
 const firebasechild = (parent, key, options) => {
   const {delay} = options
   const emitter = EventEmitter(possibleEvents)
+
   const snapshot = () => {
     const value = parent.__get(key)
-    return createSnapshot({key, value})
+    return DataSnapshot({key, value})
   }
 
   let children = {}
@@ -81,22 +79,11 @@ const firebasechild = (parent, key, options) => {
     push: (value, cb) => {
       const id = pushId()
       update({ [id]: value }, cb)
-      return createSnapshot({key: id, value})
+      return DataSnapshot({key: id, value})
     },
 
     // Implementation
-    __get: prop => {
-      const me = parent.__get(key)
-      const val = typeof me === 'object' && me !== null ? me[prop] : {}
-
-      return (
-        val === undefined ||
-        val === null ||
-        (typeof val === 'object' && Object.keys(val).length === 0)
-        ? null
-        : val
-      )
-    },
+    __get: prop => firebaseGetData(parent.__get(key), prop),
     __emitWhenChanged: oldValue => {
       emitter.emit('value', snapshot())
     },
