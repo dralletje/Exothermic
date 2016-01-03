@@ -7,8 +7,28 @@ import firebaseGetData from './firebaseGetData'
 const datasnapshot = ({key, value, ref}) => {
   //console.log(key, value, ref)
 
+  const clean = object => {
+    if (!object || typeof object !== 'object') {
+      return object
+    }
+
+    // Split the object in an array
+    return Object.keys(object)
+    .map(k => [k, object[k]])
+    // My actual mutations I am interested in
+    .filter(([k, v]) => v !== null)
+    .map(([k,v]) => [k, clean(v)])
+    // Bring it back to an object
+    .reduce((o, [k, v]) => {
+      o[k] = v
+      return o
+    }, {})
+  }
+
+  const cleanValue = clean(value)
+
   // Useful, although just props would have been better
-  const valMethod = () => value
+  const valMethod = () => cleanValue
   const keyMethod = () => key
   const refMethod = () => ref
 

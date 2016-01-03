@@ -6,6 +6,7 @@ jest
   .dontMock('../pushId')
   .dontMock('../firebasechild')
   .dontMock('../firebaseGetData')
+  .dontMock('../datasnapshot')
 
 const data = {
   users: {
@@ -149,6 +150,13 @@ export default createFirebase => {
       firebase.child('users/michiel/age').on('value', handler)
       firebase.child(`users/michiel`).remove()
       expectVal(handler, 1).toEqual(null)
+    })
+
+    it('should remove a child and no longer show it in the parent', () => {
+      const handler = jest.genMockFunction()
+      firebase.child('users/michiel').on('value', handler)
+      firebase.child(`users/michiel/age`).remove()
+      expectVal(handler, 1).toEqual({name: 'Michiel Dral'})
     })
   })
 }
