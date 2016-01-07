@@ -13,16 +13,24 @@ const datasnapshot = ({key, value, ref}) => {
     }
 
     // Split the object in an array
-    return Object.keys(object)
-    .map(k => [k, object[k]])
-    // My actual mutations I am interested in
-    .filter(([k, v]) => v !== null)
-    .map(([k,v]) => [k, clean(v)])
-    // Bring it back to an object
-    .reduce((o, [k, v]) => {
-      o[k] = v
-      return o
-    }, {})
+    let cleaned =
+      Object.keys(object)
+      .map(k => [k, object[k]])
+      // My actual mutations I am interested in
+      .map(([k,v]) => [k, clean(v)])
+      .filter(([k, v]) => v !== null)
+      // Bring it back to an object
+      .reduce((o, [k, v]) => {
+        o[k] = v
+        return o
+      }, {})
+
+    // Object is empty after cleaning it's children... to bad
+    if (Object.keys(cleaned).length === 0) {
+      return null
+    } else {
+      return cleaned
+    }
   }
 
   const cleanValue = clean(value)

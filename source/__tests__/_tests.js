@@ -40,7 +40,14 @@ export default createFirebase => {
     it('should just get me the whole root', () => {
       const handler = jest.genMockFunction()
       firebase.on('value', handler)
-      expectVal(handler).toEqual(data)
+      expectVal(handler).toEqual({
+        users: {
+          michiel: {
+            name: 'Michiel Dral',
+            age: 19,
+          },
+        },
+      })
     })
 
     it('should support a propertie', () => {
@@ -157,6 +164,29 @@ export default createFirebase => {
       firebase.child(`users/michiel`).on('value', handler)
       firebase.child(`users/michiel/age`).remove()
       expectVal(handler, 1).toEqual({name: 'Michiel Dral'})
+    })
+
+    it('should insert a object representing nested emptyness and show null', () => {
+      const handler = jest.genMockFunction()
+      firebase.child(`more_empty`).on('value', handler)
+      firebase.child(`more_empty`).set({
+        null: null,
+        empty: {},
+      })
+      expectVal(handler, 1).toEqual(null)
+    })
+
+    it('should handle ultimate nested emptyness', () => {
+      const handler = jest.genMockFunction()
+      firebase.child(`more_empty`).on('value', handler)
+      firebase.child(`more_empty`).set({
+        null: null,
+        empty: {
+          null: null,
+          empty: {},
+        },
+      })
+      expectVal(handler, 1).toEqual(null)
     })
   })
 }
