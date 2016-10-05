@@ -1,12 +1,12 @@
 'use strict';
 
-jest
-  .dontMock('../exothermic')
-  .dontMock('../EventEmitter')
-  .dontMock('../pushId')
-  .dontMock('../firebasechild')
-  .dontMock('../firebaseGetData')
-  .dontMock('../datasnapshot')
+// jest
+//   .dontMock('../exothermic')
+//   .dontMock('../EventEmitter')
+//   .dontMock('../pushId')
+//   .dontMock('../firebasechild')
+//   .dontMock('../firebaseGetData')
+//   .dontMock('../datasnapshot')
 
 const data = {
   users: {

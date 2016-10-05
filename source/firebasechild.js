@@ -30,6 +30,12 @@ const firebasechild = (parent, key, options) => {
 
   let children = {}
 
+  const __emitRawEvent = (event) => {
+    return parent.__emitRawEvent(event, key);
+  };
+
+  // The `event` param allows the root event to keep track of all the
+  // mutations that are occuring, here or deeper
   const set = (value, cb) => {
     parent.update({ [key]: value })
     emitter.emit('value', snapshot())
@@ -47,11 +53,37 @@ const firebasechild = (parent, key, options) => {
 
   const methods = {
     ...emitter,
+    off: (event, fn) => {
+      const countBeforeRemove = emitter.listenerCount(event);
+      const offResult = emitter.off(event, fn);
+      const countAfterRemove = emitter.listenerCount(event);
+      if (countBeforeRemove !== 0 && countAfterRemove === 0) {
+        __emitRawEvent({
+          type: 'unsubscription',
+          path: '',
+          event: event,
+        });
+      }
+      return offResult;
+    },
     on: (event, fn) => {
       if (event === 'value') {
         timeout(_ => fn(snapshot()), delay)
       }
-      return emitter.on(event, fn)
+
+      // Just starting to listen to this node for the first time,
+      // so I need to emit a raw event for that
+      const countBeforeListen = emitter.listenerCount(event);
+      const onResult = emitter.on(event, fn);
+      const countAfterListen = emitter.listenerCount(event);
+      if (countBeforeListen === 0 && countAfterListen !== 0) {
+        __emitRawEvent({
+          type: 'subscription',
+          path: '',
+          event: event,
+        });
+      }
+      return onResult;
     },
     once: (event, fn) => {
       // Go back to your non-realtime relation database!
@@ -67,8 +99,22 @@ const firebasechild = (parent, key, options) => {
       }
       return tail.length === 0 ? child : child.child(tail)
     },
-    set: set,
-    update: update,
+    set: (value, ...args) => {
+      __emitRawEvent({
+        type: 'set',
+        path: '',
+        value: value,
+      });
+      return set(value, ...args);
+    },
+    update: (value, ...args) => {
+      __emitRawEvent({
+        type: 'update',
+        path: '',
+        value: value,
+      });
+      return update(value, ...args);
+    },
     remove: cb => {
       set(null, cb)
     },
@@ -80,8 +126,11 @@ const firebasechild = (parent, key, options) => {
 
     // Implementation
     __get: prop => firebaseGetData(parent.__get(key), prop),
-    __emitWhenChanged: oldValue => {
-      emitter.emit('value', snapshot())
+    __emitRawEvent: (event, key) => {
+      __emitRawEvent({
+        ...event,
+        path: `${key}/${event.path}`,
+      });
     },
   }
 

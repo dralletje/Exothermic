@@ -1,8 +1,5 @@
-jest
-  .dontMock('./_tests')
-
-const tests = require('./_tests')
-const exothermic = require('../exothermic')
+import tests from './_tests';
+import exothermic from '../exothermic';
 
 tests(data =>
   exothermic(data, {delay: -1})

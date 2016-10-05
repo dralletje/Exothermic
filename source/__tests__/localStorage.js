@@ -1,11 +1,6 @@
-jest
-  .dontMock('../exothermic')
-  .dontMock('../EventEmitter')
-  .dontMock('../pushId')
-  .dontMock('./_tests')
-
-const tests = require('./_tests')
-const exothermic = require('../exothermic').exothermicLocalstorage
+import tests from './_tests';
+import ex from '../exothermic';
+const exothermic = ex.exothermicLocalstorage;
 
 const windowMock = (() => {
   let data = {}

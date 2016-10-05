@@ -37,7 +37,7 @@ const EventEmitter = events => {
     return eventListeners[event]
   }
   const listenerCount = event => {
-    return eventListeners(event).length
+    return listeners(event).length
   }
 
   return {
