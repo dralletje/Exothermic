@@ -34,11 +34,37 @@ const createFirebaseClient = (host = `localhost:8080`) => {
       localState.child(e.path).set(e.value);
     });
 
-  localState.__onMutation(e => {
-    console.log('e:', e);
-    // ws.in$.next({
-    //   type: 'subscribe',
-    //   path: 'games/lol',
-    // });
+  localState.__rawEvents.on('subscribe', e => {
+    ws.in$.next({
+      type: 'subscribe',
+      path: e.path,
+    });
   });
+
+  localState.__rawEvents.on('unsubscribe', e => {
+    ws.in$.next({
+      type: 'unsubscribe',
+      path: e.path,
+    });
+  });
+
+  localState.__rawEvents.on('set', e => {
+    ws.in$.next({
+      type: 'set',
+      path: e.path,
+      value: e.value,
+    });
+  });
+
+  localState.__rawEvents.on('update', e => {
+    ws.in$.next({
+      type: 'update',
+      path: e.path,
+      value: e.value,
+    });
+  });
+
+  return localState;
 };
+
+export default createFirebaseClient;

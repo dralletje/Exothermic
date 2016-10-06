@@ -1,70 +1,80 @@
-import EventEmitter from './EventEmitter'
-import firebasechild from './firebasechild'
+// @flow
 
-const possibleEvents = ['value']
-const rootKey = Symbol('Root of the state tree')
-const rawEvents = ['set', 'update', 'subscription', 'unsubscription'];
+// import EventEmitter from './EventEmitter'
+import refNode from './refNode';
+import { get, last, set } from 'lodash';
+import DataSnapshot from './datasnapshot';
 
-const exothermic = (initdata, {delay = 0} = {}) => {
-  let rawEventsEmitter = EventEmitter(rawEvents);
-  let data = initdata
+type Transform<T> = (value: T) => T;
 
-  const root = {
-    __get: _ => {
-      return data
-    },
-    update: (value) => {
-      data = {
-        ...data,
-        ...value[rootKey],
-      };
-    },
+const id = x => x;
+const compose = <T>(xs: Transform<T>[]): Transform<T> => {
+  return (xs.reduce((acc, fn) => {
+    return (x) => fn(acc(x))
+  }, id): any);
+};
 
-    on: () => {},
+// const possibleEvents = ['value']
+// const rootKey = Symbol('Root of the state tree')
+// const rawEvents = ['set', 'update', 'subscription', 'unsubscription'];
 
-    __emitRawEvent: (event) => {
-      console.log('event:', event);
-      rawEventsEmitter.emit(event.type, event);
-    },
-    __rawEvents: rawEventsEmitter,
+const callEvent = (data, event) => {
+  let path = event.path.split('/').slice(1)
+  console.log('path:', event.path, path);
+  let value = path.lengh === 0 ? data : get(data, path);
+  if (value !== 'undefined') {
+    event.function(DataSnapshot({ ref: null, key: last(path), value }));
   }
+};
 
-  return firebasechild(root, rootKey, {delay})
+let subscriptionMiddleware
+
+let defaultMiddleware = next => event => {
+  next(event);
+  return new Promise(() => {});
 }
+let exothermic = (initdata: Object, middleware: * = defaultMiddleware) => {
+  //let rawEventsEmitter = EventEmitter(rawEvents);
+  let data = initdata;
+  let subscriptions = [];
 
-const exothermicLocalstorage = (initdata, window, {delay = 0} = {}) => {
-  const getData = () => JSON.parse(window.localStorage.getItem('exothermic'))
-  const setData = data => window.localStorage.setItem('exothermic', JSON.stringify(data))
-  const emitter = EventEmitter(possibleEvents)
-  const rawEventsEmitter = EventEmitter(rawEvents)
-  // Initialize
-  setData(initdata)
-  // Listen for storage change
-  window.addEventListener('storage', event => {
-    if (event.key !== 'exothermic') {
-      return
+  const rootNode = refNode('', middleware(event => {
+    console.log('event.path:', event.path);
+    const path = event.path.split('/').slice(1);
+    console.log('path:', path);
+    switch (event.type) {
+      case 'subscribe':
+        callEvent(data, event);
+        subscriptions = [...subscriptions, event];
+        return;
+
+      case 'unsubscribe':
+        subscriptions = subscriptions
+          .filter(e => e.path !== event.path || e.function !== event.function);
+        return;
+
+      case 'set':
+        set(data, path, event.value);
+        const regex = new RegExp(`^${path.map(x => `($|\/${x})`).join('')}.*`);
+        console.log('regex:', regex);
+        subscriptions
+          .filter(e => {
+            const result = regex.test(e.path);
+            console.log('result, e.path, regex:', result, e.path, regex);
+            return result;
+          })
+          .forEach(e => {
+            console.log('e:', e);
+            callEvent(data, e);
+          });
+        return;
+
+      default:
+        throw new Error(`Unknown event '${event.type}'.`);
     }
-    emitter.emit('value') // Not even going to try to emit a snapshot here
-  })
+  }));
 
-  const root = {
-    ...emitter,
-    __get: getData,
-    update: value => {
-      setData({
-        ...getData(),
-        ...value[rootKey],
-      })
-    },
-
-    __emitRawEvent: (event) => {
-      rawEventsEmitter.emit(event.type, event);
-    },
-    __rawEvents: rawEventsEmitter,
-  }
-
-  return firebasechild(root, rootKey, {delay})
+  return rootNode;
 }
 
-exothermic.exothermicLocalstorage = exothermicLocalstorage
 export default exothermic

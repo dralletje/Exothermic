@@ -61,9 +61,15 @@ const hasPath = path => {
 
 createServer(incoming$ => {
   incoming$
-    .filter(hasType('update'))
+    .filter(hasType('set'))
     .subscribe(e => {
       fb.child(e.path).set(e.value);
+    });
+
+  incoming$
+    .filter(hasType('update'))
+    .subscribe(e => {
+      fb.child(e.path).update(e.value);
     });
 
   return incoming$
