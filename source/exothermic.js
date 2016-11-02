@@ -1,80 +1,156 @@
 // @flow
 
-// import EventEmitter from './EventEmitter'
+import { get, last, set, difference } from 'lodash';
+import { Observable, Subject } from 'rxjs';
+import { createStore, applyMiddleware } from 'redux';
+
 import refNode from './refNode';
-import { get, last, set } from 'lodash';
 import DataSnapshot from './datasnapshot';
+
+import type {
+  RefNode, ThenableRefNode,
+  Event, FirebasePath,
+  FirebaseValue, FirebaseData,
+} from './types';
 
 type Transform<T> = (value: T) => T;
 
 const id = x => x;
-const compose = <T>(xs: Transform<T>[]): Transform<T> => {
+export const compose = <T>(xs: Transform<T>[]): Transform<T> => {
   return (xs.reduce((acc, fn) => {
-    return (x) => fn(acc(x))
+    return (x) => acc(fn(x))
   }, id): any);
 };
+
+const matchPathParents = (path: string[]): RegExp =>
+  new RegExp(`^${path.map(x => `($|\/${x})`).join('')}`);
+
+const matchPathParentsAndChildren = (path: string[]): RegExp =>
+  new RegExp(`^${path.map(x => `($|\/${x})`).join('')}.*`);
+
+const splitPath = (path: string): string[] =>
+  path.split('/').filter(x => x !== '');
 
 // const possibleEvents = ['value']
 // const rootKey = Symbol('Root of the state tree')
 // const rawEvents = ['set', 'update', 'subscription', 'unsubscription'];
 
-const callEvent = (data, event) => {
-  let path = event.path.split('/').slice(1)
-  console.log('path:', event.path, path);
-  let value = path.lengh === 0 ? data : get(data, path);
-  if (value !== 'undefined') {
-    event.function(DataSnapshot({ ref: null, key: last(path), value }));
+const callEvent = (data: FirebaseData, event: Event, callWhenUndefined = false) => {
+  let path = splitPath(event.path);
+  let value = path.length === 0 ? data : get(data, path);
+
+  if (value === undefined && !callWhenUndefined) {
+    return;
   }
+
+  event.function(DataSnapshot({
+    ref: null,
+    key: last(path),
+    value: value === undefined ? null : value,
+  }), event);
 };
 
-let subscriptionMiddleware
+type EventHandler = (event: Event, data: FirebaseData) => any;
 
-let defaultMiddleware = next => event => {
-  next(event);
-  return new Promise(() => {});
+type Store = {
+  dispatch: (e: Event) => void,
+  getState: () => FirebaseData,
+  subscribe: (fn: () => void) => void,
 }
-let exothermic = (initdata: Object, middleware: * = defaultMiddleware) => {
-  //let rawEventsEmitter = EventEmitter(rawEvents);
-  let data = initdata;
+
+export let attachRefNode = (store: Store) => {
+  return refNode('', event => {
+    store.dispatch(event);
+  });
+}
+
+export let addSubscriptionsToStore = (store: Store, letMeKnow: ?(() => {}) = null) => {
   let subscriptions = [];
 
-  const rootNode = refNode('', middleware(event => {
-    console.log('event.path:', event.path);
-    const path = event.path.split('/').slice(1);
-    console.log('path:', path);
-    switch (event.type) {
-      case 'subscribe':
-        callEvent(data, event);
-        subscriptions = [...subscriptions, event];
-        return;
+  let sameSubscriptionAs = eventToCompareWith => event =>
+    eventToCompareWith.path === event.path && eventToCompareWith.function === event.function
+  let not = fn => x => !fn(x);
 
-      case 'unsubscribe':
-        subscriptions = subscriptions
-          .filter(e => e.path !== event.path || e.function !== event.function);
-        return;
+  // Subscribe to the actions
+  store.subscribe(() => {
+    // This will get the newest data and the event that triggered it.
+    let { data, lastEvent: event } = store.getState();
 
-      case 'set':
-        set(data, path, event.value);
-        const regex = new RegExp(`^${path.map(x => `($|\/${x})`).join('')}.*`);
-        console.log('regex:', regex);
-        subscriptions
-          .filter(e => {
-            const result = regex.test(e.path);
-            console.log('result, e.path, regex:', result, e.path, regex);
-            return result;
-          })
-          .forEach(e => {
-            console.log('e:', e);
-            callEvent(data, e);
-          });
-        return;
-
-      default:
-        throw new Error(`Unknown event '${event.type}'.`);
+    if (event === undefined || event.path === undefined) {
+      return;
     }
-  }));
 
-  return rootNode;
+    let oldSubscriptionPaths = subscriptions.map(x => x.path);
+    if (event.type === 'subscribe') {
+      if (subscriptions.find(sameSubscriptionAs(event))) {
+        // This combination of function and path is already a subscriptions:
+        // We don't want double subscriptions like that.
+        return;
+      }
+
+      // If there is no thing listening for global subscriptions,
+      // just act as a simple store and call the function directly
+      let callWhenUndefined = !letMeKnow;
+      callEvent(data, event, callWhenUndefined);
+
+      // Add subscription
+      subscriptions = [...subscriptions, event];
+      // And compare it and sent the change
+      let nextSubscriptionPaths = subscriptions.map(x => x.path);
+      let added = difference(nextSubscriptionPaths, oldSubscriptionPaths);
+
+      if (letMeKnow && added.length !== 0) {
+        letMeKnow({
+          type: 'subscription:added',
+          paths: added,
+        });
+      }
+    }
+
+    if (event.type === 'unsubscribe') {
+      // Remove the subscription
+      subscriptions = subscriptions
+        .filter(not(sameSubscriptionAs(event)));
+      // And take the diff and sent it
+      let nextSubscriptionPaths = subscriptions.map(x => x.path);
+      let removed = difference(oldSubscriptionPaths, nextSubscriptionPaths);
+      if (letMeKnow && removed.length !== 0) {
+        letMeKnow({
+          type: 'subscription:removed',
+          paths: removed,
+        });
+      }
+    }
+
+    // If it is mutated, let the subscriptions know
+    if (event.type === 'mutate') {
+      let path = splitPath(event.path);
+      const regex = new RegExp(`^${path.map(x => `($|\/${x})`).join('')}.*`);
+      subscriptions
+        .filter(e => regex.test(e.path))
+        .forEach(e => {
+          callEvent(data, e, true);
+        });
+    }
+  });
+}
+
+let exothermic = (initialData: FirebaseData) => {
+  let store = createStore((state = { lastEvent: null, data: initialData }, event: Event) => {
+    if (event.type === 'mutate') {
+      let path = splitPath(event.path);
+      event.mutations.forEach(mutation => {
+        set(state.data, [...path, ...splitPath(mutation.path)], mutation.value);
+      });
+    }
+
+    return {
+      lastEvent: event,
+      data: state.data,
+    };
+  })
+
+  return store;
 }
 
 export default exothermic

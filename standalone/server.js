@@ -1,6 +1,6 @@
 import { Server as WebSocketServer } from 'ws';
 import { Observable } from 'rxjs';
-import Exothermic from '../source/exothermic';
+import Exothermic, { addSubscriptionsToStore, attachRefNode } from '../source/exothermic';
 
 // Create a cyclejs-ish websocket handler
 const createServer = (handler) => {
@@ -25,68 +25,74 @@ const createServer = (handler) => {
 // Turn a firebase ref into a observable over it's value
 const fbValue$ = (ref) => {
   return Observable.create(observer => {
-    console.log('Subscribing')
     const subFn = ref.on('value', snap => {
       observer.next(snap.val());
     });
     return () => {
-      console.log('Unsubscribing')
       ref.off('value', subFn);
     };
   });
 };
 
-// Load data in, now for testing it's just harcoded
-const data = {
-  games: {
-    lol: 1,
-  },
+let startFirebaseServer = (data) => {
+
+  // Create an exothermic instance from the data loaded
+  let store = Exothermic(data);
+  let fb = attachRefNode(store);
+  addSubscriptionsToStore(store);
+
+  const hasType = type => {
+    return e => e.type === type;
+  }
+  const hasPath = path => {
+    return e => e.path === path;
+  }
+
+  createServer(incoming$ => {
+    incoming$
+      .filter(hasType('mutate'))
+      .subscribe(e => {
+        store.dispatch(e);
+      });
+
+    return incoming$
+      .filter(hasType('subscription:added'))
+      .flatMap(e => {
+        let path = e.paths[0].slice(1);
+        const unsubscribeEvent = incoming$.filter(hasType('subscription:remove')).filter(hasPath(path));
+        return fbValue$(fb.child(path))
+          .takeUntil(unsubscribeEvent)
+          .map(value => {
+            return {
+              type: 'mutate',
+              path: path,
+              mutations: [{ type: 'set', path: '', value: value }],
+            };
+          });
+      })
+      .takeUntil(incoming$.startWith('').last());
+  })
+
+  console.log('Started server at port 8080.');
+
+  // Listen to the root, and write updates to disk
+  return Observable.from(store)
+  .map(() => store.getState())
 };
 
-// Create an exothermic instance from the data loaded
-let fb = Exothermic(data);
+if (!module.parent) {
+  // Load data in, now for testing it's just harcoded
+  const data = {
+    message: 'Hi',
+  };
 
-// Listen to the root, and write updates to disk
-fb.on('value', snapshot => {
-  // snapshot.val();
-  console.log('Writing to disk');
-})
-
-const hasType = type => {
-  return e => e.type === type;
+  startFirebaseServer(data)
+  // Add a throttle?
+  .subscribe(x => {
+    if (x.lastEvent.type === 'mutate') {
+      console.log('Writing to disk', x.data);
+    }
+  })
 }
-const hasPath = path => {
-  return e => e.path === path;
-}
 
-createServer(incoming$ => {
-  incoming$
-    .filter(hasType('set'))
-    .subscribe(e => {
-      fb.child(e.path).set(e.value);
-    });
-
-  incoming$
-    .filter(hasType('update'))
-    .subscribe(e => {
-      fb.child(e.path).update(e.value);
-    });
-
-  return incoming$
-    .filter(hasType('subscribe'))
-    .flatMap(e => {
-      const unsubscribeEvent = incoming$.filter(hasType('unsubscribe')).filter(hasPath(e.path));
-      return fbValue$(fb.child(e.path))
-        .takeUntil(unsubscribeEvent)
-        .map(value => {
-          return {
-            type: 'value',
-            path: e.path,
-            value: value,
-          };
-        });
-    })
-    .takeUntil(incoming$.last());
-})
-
-console.log('Started server at port 8080.');
+export default startFirebaseServer;

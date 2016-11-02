@@ -1,5 +1,5 @@
 import { Observable, ReplaySubject } from 'rxjs';
-import Exothermic from '../source/exothermic';
+import Exothermic, { addSubscriptionsToStore, attachRefNode } from '../source/exothermic';
 
 const createWebsocket = (url) => {
   let in$ = new ReplaySubject();
@@ -18,53 +18,51 @@ const createWebsocket = (url) => {
     return () => ws.close();
   });
 
-  return { in$, out$: out$.share() };
+  return { toServer$: in$, fromServer$: out$.share() };
 };
 
 const createFirebaseClient = (host = `localhost:8080`) => {
-  // Create empty local copy
-  let localState = Exothermic({});
-
   let ws = createWebsocket(`ws://${host}/`);
 
-  // Apply changes from the server
-  ws.out$
-    .filter(e => e.type === 'value')
+  // Create empty local copy
+  let store = Exothermic({});
+
+  addSubscriptionsToStore(store, event => {
+    if (event.paths[0] === '') {
+      return;
+    }
+
+    // When a path is watched, tell that to the websocket
+    if (event.type === 'subscription:added') {
+      ws.toServer$.next(event);
+    }
+    if (event.type === 'subscription:removed') {
+      ws.toServer$.next(event);
+    }
+  })
+
+  store.subscribe(() => {
+    let { data, lastEvent } = store.getState();
+
+    if (!lastEvent.fromServer && lastEvent.type === 'mutate') {
+      ws.toServer$.next(lastEvent);
+    }
+  });
+
+  // mutations are the only things the server can
+  // send to the client
+  ws.fromServer$
+    .filter(e => e.type === 'mutate')
     .subscribe(e => {
-      localState.child(e.path).set(e.value);
+      store.dispatch({
+        ...e,
+        fromServer: true,
+      });
     });
 
-  localState.__rawEvents.on('subscribe', e => {
-    ws.in$.next({
-      type: 'subscribe',
-      path: e.path,
-    });
-  });
+  let refNode = attachRefNode(store);
 
-  localState.__rawEvents.on('unsubscribe', e => {
-    ws.in$.next({
-      type: 'unsubscribe',
-      path: e.path,
-    });
-  });
-
-  localState.__rawEvents.on('set', e => {
-    ws.in$.next({
-      type: 'set',
-      path: e.path,
-      value: e.value,
-    });
-  });
-
-  localState.__rawEvents.on('update', e => {
-    ws.in$.next({
-      type: 'update',
-      path: e.path,
-      value: e.value,
-    });
-  });
-
-  return localState;
+  return refNode;
 };
 
 export default createFirebaseClient;

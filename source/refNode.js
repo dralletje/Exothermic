@@ -15,27 +15,25 @@ const thenableRefNode = (node: RefNode, promise: Promise<void>): ThenableRefNode
   };
 };
 
-const addCallbackToPromise = <T>(promise: Promise<T>, cb: (error: ?Error, value: ?T) => void): Promise<T> => {
-  promise
-    .then(x => cb && cb(null, x))
-    .catch(error => cb && cb(error, null))
-  return promise;
-};
-
-const refNode = (key: FirebasePath, emit: (event: Event) => Promise<void>): RefNode => {
+const refNode = (key: FirebasePath, emit: (event: Event) => void): RefNode => {
   const set = (value, cb) => {
-    return addCallbackToPromise(emit({
-      type: 'set',
+    return emit({
+      type: 'mutate',
       path: key,
-      value: value,
-    }), cb);
+      mutations: [{ type: 'set', path: '', value: value }],
+      syncCallback: cb,
+    });
   };
-  const update = (value: FirebaseValue, cb: (error: any) => void) => {
-    return addCallbackToPromise(emit({
-      type: 'update',
+  const update = (value: { [key: string]: FirebaseValue }, cb: (error: any) => void) => {
+    const mutations = Object.keys(value).map(key => {
+      return { type: 'set', path: key, value: value[key] };
+    });
+    return emit({
+      type: 'mutate',
       path: key,
-      value: value
-    }), cb);
+      mutations: mutations,
+      syncCallback: cb,
+    });
   };
   const child = (childKey) => {
     return refNode(`${key}/${childKey}`, emit);
@@ -46,7 +44,8 @@ const refNode = (key: FirebasePath, emit: (event: Event) => Promise<void>): RefN
     push: (value, cb) => {
       const id = pushId()
       const donePromise = update({ [id]: value }, cb);
-      return thenableRefNode(child(id), donePromise);
+      return child(id);
+      //return thenableRefNode(child(id), donePromise);
     },
     remove: (cb) => {
       return set(null, cb);
@@ -68,7 +67,7 @@ const refNode = (key: FirebasePath, emit: (event: Event) => Promise<void>): RefN
 
     off: (event, listener) => {
       emit({
-        type: 'subscribe',
+        type: 'unsubscribe',
         path: key,
         event: event,
         function: listener,
