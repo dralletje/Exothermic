@@ -116,7 +116,7 @@ describe('exothermic without delay', () => {
     expectVal(handler, 1).toEqual({name: 'jake'})
   })
 
-  it.skip('should return null when asking for non-existing key', () => {
+  it('should return null when asking for non-existing key', () => {
     const handler = jest.genMockFunction()
     firebase.child(`this/key/does/not/exist`).on('value', handler)
     expectVal(handler).toEqual(null)
