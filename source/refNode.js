@@ -38,9 +38,11 @@ const refNode = (key: FirebasePath, emit: (event: Event) => void): RefNode => {
   const child = (childKey) => {
     return refNode(`${key}/${childKey}`, emit);
   };
+  const path = key.split('/');
+  const ownKey = path[path.length - 1];
 
   return {
-    key: key,
+    key: () => ownKey,
     push: (value, cb) => {
       const id = pushId()
       const donePromise = update({ [id]: value }, cb);

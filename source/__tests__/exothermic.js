@@ -140,7 +140,7 @@ describe('exothermic without delay', () => {
   })
 
   // FIX it should actually not return a snapshot, but a reference
-  it.skip('should return the snapshot on push', () => {
+  it('should return the snapshot on push', () => {
     const uid = firebase.child(`empty`).push('randomish value here').key()
     const handler = jest.genMockFunction()
     firebase.child(`empty/${uid}`).on('value', handler)
