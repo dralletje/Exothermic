@@ -26,6 +26,9 @@ let firebase = exothermic(initialdata)
 
 
 ### TODO
+
+[ ] Make objects with number-as-keys result in arrays
+
 Not yet the whole API is mocked 😔
 Here is a list of the api and what is/isn't supported yet!
 
@@ -66,14 +69,14 @@ Here is a list of the api and what is/isn't supported yet!
 **Query (Methods)**
 - [x] on()
 - [x] off()
-- [ ] once()
-- [ ] orderByChild()
+- [x] once()
+- [x] orderByChild()
 - [ ] orderByKey()
-- [ ] orderByValue()
+- [x] orderByValue()
 - [ ] orderByPriority()
 - [ ] startAt()
 - [ ] endAt()
-- [ ] equalTo()
+- [x] equalTo()
 - [ ] limitToFirst()
 - [ ] limitToLast()
 - [ ] limit()

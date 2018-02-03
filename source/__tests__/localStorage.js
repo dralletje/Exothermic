@@ -4,8 +4,8 @@ jest
   .dontMock('../pushId')
   .dontMock('./_tests')
 
-const tests = require('./_tests')
-const exothermic = require('../exothermic').exothermicLocalstorage
+const tests = require('./_tests').default
+const exothermic = require('../exothermic').default.exothermicLocalstorage
 
 const windowMock = (() => {
   let data = {}

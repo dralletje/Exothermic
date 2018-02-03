@@ -1,13 +1,5 @@
 'use strict';
 
-jest
-  .dontMock('../exothermic')
-  .dontMock('../EventEmitter')
-  .dontMock('../pushId')
-  .dontMock('../firebasechild')
-  .dontMock('../firebaseGetData')
-  .dontMock('../datasnapshot')
-
 const data = {
   users: {
     michiel: {
@@ -187,6 +179,57 @@ export default createFirebase => {
         },
       })
       expectVal(handler, 1).toEqual(null)
+    });
+
+    it('should work with .orderByChild and .equalTo', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
+      })
+      fb.child(`users`).orderByChild('age').equalTo(21).on('value', handler)
+      expectVal(handler).toEqual({
+        a: { name: 'Michiel', age: 21 },
+        b: { name: 'Arne', age: 21 },
+      })
+    })
+
+    it('should work with .orderByValue and .equalTo', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: { Michiel: 21, Arne: 21, Danique: 19 },
+      })
+      fb.child(`users`).orderByValue().equalTo(21).on('value', handler)
+      expectVal(handler).toEqual({ Michiel: 21, Arne: 21 });
+    })
+
+    it('should work with .on("child_removed")', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
+      })
+      fb.child(`users`).on('child_removed', handler)
+      fb.child('users').child('a').remove();
+      expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
+    })
+
+    it('should work with .on("child_added")', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
+      })
+      fb.child(`users`).on('child_added', handler)
+      expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
+      expectVal(handler, 1).toEqual({ name: 'Arne', age: 21 });
+      expectVal(handler, 2).toEqual({ name: 'Danique', age: 19 });
+    })
+
+    it.skip('should work return an array if it is obviously an array', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        first_primes: [2, 3, 5, 7, 11],
+      })
+      fb.child(`first_primes`).on('value', handler)
+      expectVal(handler).toEqual([2, 3, 5, 7, 11]);
     })
   })
 }
