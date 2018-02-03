@@ -1,8 +1,17 @@
+// NOTE lodash/fp so it is immutable update
+import { update } from 'lodash/fp'
+
 import EventEmitter from './EventEmitter'
 import firebasechild from './firebasechild'
 
 const possibleEvents = ['value']
 const rootKey = Symbol('Root of the state tree')
+
+// TODO This really the best I can do? 🤷‍♀️
+const detect_array = (obj) => {
+  let keys = Object.keys(obj);
+  return Array.from({ length: keys.length }).every((_, index) => keys.includes(String(index)));
+}
 
 const clean_object = object => {
   if (!object || typeof object !== 'object') {
@@ -21,30 +30,63 @@ const clean_object = object => {
       return o
     }, {})
 
+  let keys = Object.keys(cleaned);
+
   // Object is empty after cleaning it's children... to bad
-  if (Object.keys(cleaned).length === 0) {
+  if (keys.length === 0) {
     return null
+  } else if (detect_array(cleaned)) {
+    return Array.from({ ...cleaned, length: keys.length });
   } else {
-    return cleaned
+    return cleaned;
   }
 }
 
-const exothermic = (initdata, {delay = 0} = {}) => {
-  let data = initdata
+/*:flow
+type T_Path = Array<string>;
+type T_FirebaseChange =
+  | { type: 'set', path: T_Path, value: mixed }
+  | { type: 'update', path: T_Path, value: { [key: string]: mixed } }
+*/
+const apply_firebase_change = (change, data) => {
+  let path = change.path.slice(1);
 
-  // TODO Clean all data either in `update` or in `__get`
+  if (change.type === 'set') {
+    return update(path, () => change.value, data);
+  } else if (change.type === 'update') {
+    return update(path, (old_value) => {
+      return { ...old_value, ...change.value };
+    }, data);
+  } else {
+    throw new Error(`Unknown onChange type '${change.type}'`);
+  }
+}
+
+const exothermic = (initdata, { delay = 0, onChange } = {}) => {
+  let data = clean_object(initdata);
+
+  let value_listener = null;
+
   const root = {
-    __get: _ => {
-      return clean_object(data);
-    },
-    update: value => {
-      // TODO Some way to "record" the changes applied
-      data = {
-        ...data,
-        ...value[rootKey],
+    __get: () => data,
+    __onChange: (change/*: T_FirebaseChange*/) => {
+      data = clean_object(apply_firebase_change(change, data));
+      value_listener();
+
+      if (onChange) {
+        onChange({ change, data });
       }
     },
-    on: () => {},
+
+    on: (event, fn) => {
+      if (event !== 'value') {
+        throw new Error(`Can only listen for 'value' on exothermic root`);
+      }
+      if (value_listener != null) {
+        throw new Error(`Can only have one 'value' listener on exothermic root`);
+      }
+      value_listener = fn;
+    },
   }
 
   return firebasechild(root, rootKey, {delay})

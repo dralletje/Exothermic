@@ -87,6 +87,9 @@ class FirebaseQuery {
       // console.log(`old_val, val:`, old_val, val)
       // console.log(`added, removed, changed:`, added, removed, changed)
 
+      added.forEach(key => {
+        this.emitter.emit('child_added', snapshot.child(key));
+      });
       removed.forEach(key => {
         this.emitter.emit('child_removed', old_snapshot.child(key));
       });
@@ -195,19 +198,34 @@ class FirebaseChild extends FirebaseQuery {
     this.children = {};
   }
 
+  __onChange(change) {
+    this.parent.__onChange({
+      ...change,
+      path: [this.key, ...(change.path || [])],
+    });
+  }
+
   set(value, cb) {
-    this.parent.update({ [this.key]: value })
-    this.emitter.emit('value', this._get_snapshot())
+    this.__onChange({
+      type: 'set',
+      value: value,
+    })
+    // this.parent.update({ [this.key]: value })
+    // this.emitter.emit('value', this._get_snapshot())
     if (typeof cb === 'function') {
       cb(null)
     }
   }
 
   update(value, cb) {
-    this.set({
-      ...this.parent.__get(this.key),
-      ...value,
-    }, cb)
+    this.__onChange({
+      type: 'update',
+      value: value,
+    })
+    // this.set({
+    //   ...this.parent.__get(this.key),
+    //   ...value,
+    // }, cb)
   }
 
   child(path) {

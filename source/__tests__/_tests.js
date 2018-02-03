@@ -63,7 +63,6 @@ export default createFirebase => {
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/name`).on('value', handler)
       firebase.child(`users`).child('michiel/name').set('Da Rude')
-
       expectVal(handler, 1).toBe('Da Rude')
     })
 
@@ -223,7 +222,7 @@ export default createFirebase => {
       expectVal(handler, 2).toEqual({ name: 'Danique', age: 19 });
     })
 
-    it.skip('should work return an array if it is obviously an array', () => {
+    it('should work return an array if it is obviously an array', () => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         first_primes: [2, 3, 5, 7, 11],
