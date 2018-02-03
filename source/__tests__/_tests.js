@@ -77,7 +77,6 @@ export default createFirebase => {
       expectVal(handler2).toBe(19)
     })
 
-
     it('should call the handler with new value when set', () => {
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/name`).on('value', handler)
@@ -138,14 +137,15 @@ export default createFirebase => {
     })
 
     it('should create unique id\'s', () => {
-      const empty = firebase.child('empty')
-      empty.push('1')
-      empty.push('2')
-      empty.push('3')
+      let firebase = createFirebase({ empty: {} });
+      let empty = firebase.child('empty');
+      empty.push('1');
+      empty.push('2');
+      empty.push('3');
 
       const handler = jest.genMockFunction()
-      empty.on('value', handler)
-      expect(Object.keys(handler.mock.calls[0][0].val()).length).toBe(3)
+      empty.on('value', handler);
+      expect(Object.keys(handler.mock.calls[0][0].val()).length).toBe(3);
     })
 
     it('should return the snapshot on push', () => {

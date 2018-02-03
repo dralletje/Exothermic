@@ -154,7 +154,12 @@ class FirebaseQuery {
   // Implementation
   __get(prop) {
     let value = this._parent.__get(this._key);
-    return value != null && value[prop] != null ? value[prop] : null
+
+    if (prop == null) {
+      return value;
+    } else {
+      return value != null && value[prop] != null ? value[prop] : null;
+    }
   }
 
   orderByChild(child) {
@@ -250,10 +255,24 @@ class FirebaseChild extends FirebaseQuery {
 
   push(value, cb) {
     // TODO Make this actually  it's own type of "onChange"
-    const id = pushId()
-    this.update({ [id]: value }, cb)
+    let current_value_keys = Object.keys(this.__get() || {});
+    // Deterministically generate the ID based on the keys currently in the object
+    const id = generate_id(current_value_keys);
+    this.update({ [id]: value }, cb);
     return DataSnapshot({ key: id, value, ref: this.child(id) })
   }
+}
+
+const generate_id = (existing_keys) => {
+  let key = null;
+  let incrementor = 0;
+  let keys_length = existing_keys.length;
+
+  while (key == null || existing_keys.includes(key)) {
+    let key = new Buffer(String(Math.pow((1024 + incrementor) * (keys_length + 1), 2))).toString('base64').slice(0, 10).toUpperCase();
+    incrementor = incrementor + 1;
+  }
+  return key;
 }
 
 const firebasechild = (parent, key, options) => {
