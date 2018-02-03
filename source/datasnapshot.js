@@ -8,7 +8,7 @@ const datasnapshot = ({key, value, ref}) => {
   // Useful, although just props would have been better
   const valMethod = () => value
   const keyMethod = () => key
-  const refMethod = () => ref
+  const refMethod = () => ref.ref()
 
   // Bullshit
   const exists = () => value !== null
@@ -18,7 +18,7 @@ const datasnapshot = ({key, value, ref}) => {
     const childSnapshot = datasnapshot({
       key: first_key,
       value: value != null && value[first_key] != null ? value[first_key] : null,
-      ref: ref.child(first_key),
+      ref: ref.ref().child(first_key),
     })
     return tail.length === 0 ? childSnapshot : childSnapshot.child(tail)
   }

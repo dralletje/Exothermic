@@ -32,55 +32,34 @@ let firebase = exothermic(initialdata)
 Not yet the whole API is mocked 😔
 Here is a list of the api and what is/isn't supported yet!
 
-**Firebase (Methods)**
-- [x] new Firebase()
-- [ ] auth()
-- [ ] authWithCustomToken()
-- [ ] authAnonymously()
-- [ ] authWithPassword()
-- [ ] authWithOAuthPopup()
-- [ ] authWithOAuthRedirect()
-- [ ] authWithOAuthToken()
-- [ ] getAuth()
-- [ ] onAuth()
-- [ ] offAuth()
-- [ ] unauth()
+**Reference (Methods)**
 - [x] child()
-- [ ] parent()
-- [ ] root()
-- [ ] key()
-- [ ] name()
-- [ ] toString()
+- [x] parent()
+- [x] root()
+- [x] key()
 - [x] set()
 - [x] update()
 - [x] remove()
 - [x] push()
-- [ ] setWithPriority()
-- [ ] setPriority()
+- [ ] ~~setWithPriority()~~ **Really, screw priority**
+- [ ] ~~setPriority() **Really, screw priority**
 - [ ] transaction()
-- [ ] createUser()
-- [ ] changeEmail()
-- [ ] changePassword()
-- [ ] removeUser()
-- [ ] resetPassword()
-- [ ] goOnline()
-- [ ] goOffline()
 
 **Query (Methods)**
 - [x] on()
 - [x] off()
 - [x] once()
 - [x] orderByChild()
-- [ ] orderByKey()
+- [ ] ~~orderByKey()~~ **As I am not really interested in ordering (just querying with equalTo) I don't think I'll add this**
 - [x] orderByValue()
-- [ ] orderByPriority()
+- [ ] ~~orderByPriority()~~ **Really, screw priority**
 - [ ] startAt()
 - [ ] endAt()
 - [x] equalTo()
 - [ ] limitToFirst()
 - [ ] limitToLast()
 - [ ] limit()
-- [ ] ref()
+- [x] ref()
 
 **Firebase.onDisconnect() (Methods)**
 - [ ] set()
@@ -103,5 +82,5 @@ Here is a list of the api and what is/isn't supported yet!
 - [x] name()
 - [x] numChildren()
 - [x] ref()
-- [ ] getPriority() **Not sure if I am gonna implement this**
+- [ ] ~~getPriority()~~ **Not sure if I am gonna implement this**
 - [x] exportVal()

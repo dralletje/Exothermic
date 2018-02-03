@@ -23,6 +23,25 @@ export default createFirebase => {
       firebase = createFirebase(data)
     })
 
+    it('should have a root key of null', () => {
+      let firebase = createFirebase(data);
+      expect(firebase.key()).toBe(null);
+    });
+    it('should have a root parent of null', () => {
+      let firebase = createFirebase(data);
+      expect(firebase.parent()).toBe(null);
+    });
+
+    it('should have a working key()', () => {
+      let firebase = createFirebase(data);
+      expect(firebase.child('this').child('is').child('path').key()).toBe('path');
+      expect(firebase.child('other/path/with').key()).toBe('with');
+    });
+    it('should have a working parent()', () => {
+      let firebase = createFirebase(data);
+      expect(firebase.child('this').child('is').child('path').parent().key()).toBe('is');
+      expect(firebase.child('other/path/with').parent().key()).toBe('path');    });
+
     it('should call the event handler', () => {
       const handler = jest.genMockFunction()
       firebase.on('value', handler)

@@ -65,50 +65,58 @@ let compare_objects = (prev, next) => {
 
 class FirebaseQuery {
   constructor(parent, key, options, query = {}) {
-    this.parent = parent;
-    this.key = key;
-    this.query = query;
-    this.options = options;
+    this._parent = parent;
+    this._key = key;
+    this._query = query;
+    this._options = options;
 
-    this.emitter = EventEmitter(possibleEvents);
+    this._emitter = EventEmitter(possibleEvents);
 
-    this.current_snapshot = this._get_snapshot();
+    this._current_snapshot = this._get_snapshot();
 
     // If parent changes, you change too
-    //@TODO: Compare to the old value and call child_added/child_removed if needed
-    this.parent.on('value', () => {
-      let old_snapshot = this.current_snapshot;
+    //@TODO Remove handler on garbage collect? idk?
+    this._parent.on('value', () => {
+      let old_snapshot = this._current_snapshot;
       let snapshot = this._get_snapshot();
       let { added, removed, changed } = compare_objects(old_snapshot.val(), snapshot.val());
 
-      this.current_snapshot = snapshot;
-      this.emitter.emit('value', snapshot);
+      this._current_snapshot = snapshot;
+      this._emitter.emit('value', snapshot);
 
       // console.log(`old_val, val:`, old_val, val)
       // console.log(`added, removed, changed:`, added, removed, changed)
 
       added.forEach(key => {
-        this.emitter.emit('child_added', snapshot.child(key));
+        this._emitter.emit('child_added', snapshot.child(key));
       });
       removed.forEach(key => {
-        this.emitter.emit('child_removed', old_snapshot.child(key));
+        this._emitter.emit('child_removed', old_snapshot.child(key));
       });
     })
   }
 
-  child(path) {
-    // EZ
-    return this.parent.child(this.key).child(path);
+  ref() {
+    return this._key === null ? this : this._parent.child(this._key);
+  }
+  key() {
+    return this._key;
+  }
+  parent() {
+    return this._key === null ? null : this._parent;
+  }
+  root() {
+    return this._key === null ? this : this._parent.root();
   }
 
   _get_snapshot() {
-    const value = this.parent.__get(this.key);
-    let filtered_value = filter_by_query(value, this.query);
-    return DataSnapshot({ key: this.key, value: filtered_value, ref: this });
+    const value = this._parent.__get(this._key);
+    let filtered_value = filter_by_query(value, this._query);
+    return DataSnapshot({ key: this._key, value: filtered_value, ref: this });
   }
 
   on(event, fn) {
-    if (!is_valid_query(this.query)) {
+    if (!is_valid_query(this._query)) {
       throw new Error(`Invalid query!`);
     }
 
@@ -119,15 +127,15 @@ class FirebaseQuery {
         snapshot.forEach(child => {
           fn(child);
         });
-      }, this.options.delay);
+      }, this._options.delay);
     }
     if (event === 'value') {
-      timeout(_ => fn(this._get_snapshot()), this.options.delay);
+      timeout(_ => fn(this._get_snapshot()), this._options.delay);
     }
-    return this.emitter.on(event, fn)
+    return this._emitter.on(event, fn)
   }
   once(event, fn) {
-    if (!is_valid_query(this.query)) {
+    if (!is_valid_query(this._query)) {
       throw new Error(`Invalid query!`);
     }
     // // Go back to your non-realtime relation database!
@@ -135,7 +143,7 @@ class FirebaseQuery {
 
     if (event === 'value') {
       if (fn) {
-        timeout(_ => fn(this._get_snapshot()), this.options.delay);
+        timeout(_ => fn(this._get_snapshot()), this._options.delay);
       }
       return Promise.resolve(this._get_snapshot());
     } else {
@@ -145,31 +153,31 @@ class FirebaseQuery {
 
   // Implementation
   __get(prop) {
-    let value = this.parent.__get(this.key);
+    let value = this._parent.__get(this._key);
     return value != null && value[prop] != null ? value[prop] : null
   }
 
   orderByChild(child) {
-    if (this.query.orderBy != null) {
-      throw new Error(`Query already ordered (by ${this.query.orderBy.type})`)
+    if (this._query.orderBy != null) {
+      throw new Error(`Query already ordered (by ${this._query.orderBy.type})`)
     }
-    return new FirebaseQuery(this.parent, this.key, this.options, {
-      ...this.query,
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
       orderBy: { type: 'child', child: child },
     });
   }
   orderByValue() {
-    if (this.query.orderBy != null) {
-      throw new Error(`Query already ordered (by ${this.query.orderBy.type})`)
+    if (this._query.orderBy != null) {
+      throw new Error(`Query already ordered (by ${this._query.orderBy.type})`)
     }
-    return new FirebaseQuery(this.parent, this.key, this.options, {
-      ...this.query,
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
       orderBy: { type: 'value' },
     });
   }
   equalTo(value) {
-    return new FirebaseQuery(this.parent, this.key, this.options, {
-      ...this.query,
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
       equalTo: value === null ? EXPLICIT_NULL : value,
     });
   }
@@ -195,13 +203,13 @@ class FirebaseQuery {
 class FirebaseChild extends FirebaseQuery {
   constructor(parent, key, options) {
     super(parent, key, options, {});
-    this.children = {};
+    this._children = {};
   }
 
   __onChange(change) {
-    this.parent.__onChange({
+    this._parent.__onChange({
       ...change,
-      path: [this.key, ...(change.path || [])],
+      path: [this._key, ...(change.path || [])],
     });
   }
 
@@ -210,8 +218,7 @@ class FirebaseChild extends FirebaseQuery {
       type: 'set',
       value: value,
     })
-    // this.parent.update({ [this.key]: value })
-    // this.emitter.emit('value', this._get_snapshot())
+
     if (typeof cb === 'function') {
       cb(null)
     }
@@ -221,18 +228,17 @@ class FirebaseChild extends FirebaseQuery {
     this.__onChange({
       type: 'update',
       value: value,
-    })
-    // this.set({
-    //   ...this.parent.__get(this.key),
-    //   ...value,
-    // }, cb)
+    });
+    if (typeof cb === 'function') {
+      cb(null)
+    }
   }
 
   child(path) {
     const [first, ...tail] = Array.isArray(path) ? path : path.split('/')
-    const child = this.children[first] || new FirebaseChild(this, first, this.options)
-    this.children = {
-      ...this.children,
+    const child = this._children[first] || new FirebaseChild(this, first, this._options)
+    this._children = {
+      ...this._children,
       [first]: child,
     }
     return tail.length === 0 ? child : child.child(tail)
@@ -243,9 +249,10 @@ class FirebaseChild extends FirebaseQuery {
   }
 
   push(value, cb) {
+    // TODO Make this actually  it's own type of "onChange"
     const id = pushId()
     this.update({ [id]: value }, cb)
-    return DataSnapshot({ key: id, value, /* ref: TODO */ })
+    return DataSnapshot({ key: id, value, ref: this.child(id) })
   }
 }
 

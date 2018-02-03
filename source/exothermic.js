@@ -5,7 +5,6 @@ import EventEmitter from './EventEmitter'
 import firebasechild from './firebasechild'
 
 const possibleEvents = ['value']
-const rootKey = Symbol('Root of the state tree')
 
 // TODO This really the best I can do? 🤷‍♀️
 const detect_array = (obj) => {
@@ -19,6 +18,7 @@ const clean_object = object => {
   }
 
   // Split the object in an array
+  // TODO Some lodash-ness?
   let cleaned =
     Object.entries(object)
     // My actual mutations I am interested in
@@ -89,7 +89,7 @@ const exothermic = (initdata, { delay = 0, onChange } = {}) => {
     },
   }
 
-  return firebasechild(root, rootKey, {delay})
+  return firebasechild(root, null, {delay})
 }
 
 // const exothermicLocalstorage = (initdata, window, {delay = 0} = {}) => {
