@@ -11,7 +11,7 @@ const datasnapshot = ({key, value, ref}) => {
   const refMethod = () => ref.ref()
 
   // Bullshit
-  const exists = () => value !== null
+  const exists = () => value != null
 
   const child = (path) => {
     const [first_key, ...tail] = Array.isArray(path) ? path : path.split('/')
