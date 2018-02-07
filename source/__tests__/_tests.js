@@ -268,19 +268,19 @@ export default createFirebase => {
       expectVal(handler2).toEqual({ Michiel: 20, Tim: 10 });
     })
 
-    it('should work with .orderByValue, .startAt and .endAt combined', async () => {
+    it('should work with .onDisconnect', async () => {
       let fb = createFirebase({
-        online_users: {},
+        online_users: { Arne: true },
       });
 
       fb.child('online_users/Michiel').set(true);
       fb.child('online_users/Michiel').onDisconnect().set(null);
 
-      expect((await fb.child('online_users').once('value')).val()).toEqual({ Michiel: true });
+      expect((await fb.child('online_users').once('value')).val()).toEqual({ Arne: true, Michiel: true });
 
-      fb.simulate_disconnect();
+      fb._test_simulate_disconnect();
 
-      expect((await fb.child('online_users').once('value')).val()).toEqual({ });
+      expect((await fb.child('online_users').once('value')).val()).toEqual({ Arne: true });
     })
 
     it('should work with .on("child_removed")', () => {

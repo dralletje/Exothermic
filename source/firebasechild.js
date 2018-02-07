@@ -6,7 +6,8 @@ import pushId from './pushId'
 import fp from 'lodash/fp';
 import { isEqual, difference, intersection } from 'lodash';
 
-const possibleEvents = ['value', 'child_removed', 'child_added'];
+const DISCONNECT_EVENT = Symbol(`Disconnect event`);
+const possibleEvents = ['value', 'child_removed', 'child_added', DISCONNECT_EVENT];
 
 let precondition = (condition, message = `Unmet precondition`) => {
   if (!condition) {
@@ -117,6 +118,13 @@ class FirebaseOndisconnect {
   constructor(parent/*: FirebaseReference*/, options) {
     this._parent = parent;
     this._options = options;
+
+    this._change_list = [];
+    this._parent.on(DISCONNECT_EVENT, () => {
+      this._change_list.forEach(change => {
+        this.__onChange(change);
+      })
+    })
   }
 
   __onChange(change) {
@@ -126,11 +134,27 @@ class FirebaseOndisconnect {
     });
   }
 
+  cancel() {
+    throw new Error(`Whenever you need this, let me know`)
+  }
+
   set(value) {
-    this.__onChange({
-      type: 'ondisconnect',
-      change: { type: 'set', value },
-    });
+    this._change_list = [
+      ...this._change_list,
+      { type: 'set', value, cause: 'ondisconnect' }
+    ];
+  }
+  update(value) {
+    this._change_list = [
+      ...this._change_list,
+      { type: 'update', value, cause: 'ondisconnect' }
+    ];
+  }
+  remove() {
+    this._change_list = [
+      ...this._change_list,
+      { type: 'set', value: null, cause: 'ondisconnect' }
+    ];
   }
 }
 
@@ -237,7 +261,10 @@ class FirebaseQuery {
   }
 
   onDisconnect() {
-    return new FirebaseOndisconnect(this, this._options);
+    if (this._ondisconnect_child == null) {
+      this._ondisconnect_child = new FirebaseOndisconnect(this, this._options);
+    }
+    return this._ondisconnect_child;
   }
 
   orderByChild(child) {
@@ -320,6 +347,9 @@ class FirebaseChild extends FirebaseQuery {
   constructor(parent, key, options) {
     super(parent, key, options, {});
     this._children = {};
+
+    // For testing disconnect
+    parent.on(DISCONNECT_EVENT, () => this._emitter.emit(DISCONNECT_EVENT));
   }
 
   __onChange(change) {
@@ -362,6 +392,10 @@ class FirebaseChild extends FirebaseQuery {
 
   remove(cb) {
     this.set(null, cb);
+  }
+
+  _test_simulate_disconnect() {
+    this._emitter.emit(DISCONNECT_EVENT);
   }
 
   push(value, cb) {

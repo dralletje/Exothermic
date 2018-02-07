@@ -80,17 +80,16 @@ const exothermic = (initdata, { delay = 0, onChange } = {}) => {
     },
 
     on: (event, fn) => {
-      if (event !== 'value') {
-        throw new Error(`Can only listen for 'value' on exothermic root`);
+      if (event === 'value') {
+        if (value_listener != null) {
+          throw new Error(`Can only have one 'value' listener on exothermic root`);
+        }
+        value_listener = fn;
       }
-      if (value_listener != null) {
-        throw new Error(`Can only have one 'value' listener on exothermic root`);
-      }
-      value_listener = fn;
     },
   }
 
-  return firebasechild(root, null, {delay})
+  return firebasechild(root, null, {delay});
 }
 
 // const exothermicLocalstorage = (initdata, window, {delay = 0} = {}) => {

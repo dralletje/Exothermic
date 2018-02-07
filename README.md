@@ -27,10 +27,7 @@ let firebase = exothermic(initialdata)
 
 ### TODO
 
-[ ] Make objects with number-as-keys result in arrays
-
-Not yet the whole API is mocked 😔
-Here is a list of the api and what is/isn't supported yet!
+Not yet the whole API is mocked, because I think there are some parts that I don't need. All the other parts are mocked and should be working: let me know if there is a bug!
 
 **Reference (Methods)**
 - [x] child()
@@ -61,14 +58,14 @@ Here is a list of the api and what is/isn't supported yet!
 - [x] ref()
 
 **Firebase.onDisconnect() (Methods)**
-- [ ] set()
-- [ ] update()
-- [ ] remove()
-- [ ] setWithPriority()
-- [ ] cancel()
+- [x] set()
+- [x] update()
+- [x] remove()
+- [ ] ~~setWithPriority()~~
+- [ ] ~~cancel()~~ **Don't think this is necessary**
 
 **Firebase.ServerValue (Constants)**
-- [ ] TIMESTAMP
+- [ ] ~~TIMESTAMP~~
 
 **DataSnapshot (Methods)**
 - [x] exists()
