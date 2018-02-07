@@ -238,6 +238,36 @@ export default createFirebase => {
       expectVal(handler).toEqual({ '30': 'Arne' });
     })
 
+    it('should work with .orderByValue and .limitToFirst(1)', () => {
+      let fb = createFirebase({
+        users: {  Tim: 10, Arne: 30, Michiel: 20 },
+      })
+
+      // Make sure the .orderByValue actually has effect,
+      // and was not just already how it was ordered
+      let handler = jest.genMockFunction();
+      fb.child(`users`).limitToLast(1).on('value', handler)
+      expectVal(handler).not.toEqual({ Arne: 30 });
+
+      let handler2 = jest.genMockFunction();
+      fb.child(`users`).orderByValue().limitToLast(1).on('value', handler2)
+      expectVal(handler2).toEqual({ Arne: 30 });
+    })
+
+    it('should work with .orderByValue, .startAt and .endAt combined', () => {
+      let fb = createFirebase({
+        users: {  Tim: 10, Arne: 30, Michiel: 20 },
+      })
+
+      let handler = jest.genMockFunction();
+      fb.child(`users`).orderByValue().startAt(20).endAt(30).on('value', handler)
+      expectVal(handler).toEqual({ Michiel: 20, Arne: 30 });
+
+      let handler2 = jest.genMockFunction();
+      fb.child(`users`).orderByValue().startAt(10).endAt(20).on('value', handler2)
+      expectVal(handler2).toEqual({ Michiel: 20, Tim: 10 });
+    })
+
     it('should work with .on("child_removed")', () => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({

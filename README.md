@@ -50,15 +50,14 @@ Here is a list of the api and what is/isn't supported yet!
 - [x] off()
 - [x] once()
 - [x] orderByChild()
-- [ ] ~~orderByKey()~~ **As I am not really interested in ordering (just querying with equalTo) I don't think I'll add this**
+- [x] orderByKey()
 - [x] orderByValue()
 - [ ] ~~orderByPriority()~~ **Really, screw priority**
-- [ ] startAt()
-- [ ] endAt()
+- [x] startAt()
+- [x] endAt()
 - [x] equalTo()
-- [ ] limitToFirst()
-- [ ] limitToLast()
-- [ ] limit()
+- [x] limitToFirst()
+- [x] limitToLast()
 - [x] ref()
 
 **Firebase.onDisconnect() (Methods)**

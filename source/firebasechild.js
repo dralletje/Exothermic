@@ -4,7 +4,7 @@ import DataSnapshot from './datasnapshot'
 import pushId from './pushId'
 
 import fp from 'lodash/fp';
-import { fromPairs, toPairs, isEqual, difference, intersection } from 'lodash';
+import { isEqual, difference, intersection } from 'lodash';
 
 const possibleEvents = ['value', 'child_removed', 'child_added'];
 
@@ -26,9 +26,9 @@ const timeout = (fn, delay) => {
   }
 }
 
-const is_valid_query = ({ orderBy, equalTo, limit }) => {
+const is_valid_query = ({ orderBy, equalTo, limit, startAt, endAt }) => {
   if (orderBy != null) {
-    return equalTo != null || limit != null;
+    return equalTo != null || limit != null || startAt != null || endAt != null;
   }
   return true;
 }
@@ -61,7 +61,7 @@ let tap = (fn) => (x) => {
   return x;
 }
 
-const filter_by_query = (value, { orderBy, equalTo, limit }) => {
+const filter_by_query = (value, { orderBy, equalTo, limit, endAt, startAt }) => {
   let compare_fn = match(equalTo, {
     [EXPLICIT_NULL]: x => x == null,
     [match.any]: x => x === equalTo,
@@ -81,7 +81,16 @@ const filter_by_query = (value, { orderBy, equalTo, limit }) => {
       return { key, value, sort_value: sort_fn({ key, value }) }
     }),
 
+    fp.sortBy(({ sort_value }) => sort_value),
     fp.filter(({ sort_value }) => compare_fn(sort_value)),
+
+    endAt == null
+    ? fp.identity
+    : fp.filter(({ sort_value }) => sort_value <= endAt.value),
+
+    startAt == null
+    ? fp.identity
+    : fp.filter(({ sort_value }) => sort_value >= startAt.value),
 
     match(limit && limit.type, {
       first: limit && fp.take(limit.count),
@@ -249,6 +258,18 @@ class FirebaseQuery {
     return new FirebaseQuery(this._parent, this._key, this._options, {
       ...this._query,
       limit: { type: 'first', count: n },
+    });
+  }
+  startAt(value) {
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
+      startAt: { value },
+    });
+  }
+  endAt(value) {
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
+      endAt: { value },
     });
   }
 
