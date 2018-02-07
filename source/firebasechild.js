@@ -324,23 +324,6 @@ class FirebaseQuery {
       endAt: { value },
     });
   }
-
-  // SMALL EXTENSIONS FOR JOBLETICS (STUPID)
-  value() {
-    return Promise.resolve(this._get_snapshot());
-  }
-
-  observe() {
-    let Observable = require('rx');
-    return Observable.create(observer => {
-      // Listen to event
-      const unbind =  this.on(event,
-                      x => observer.onNext(x),
-                      err => observer.onError(err))
-      // Unbind on dispose
-      return () => methods.off(event, unbind)
-    })
-  }
 }
 
 class FirebaseChild extends FirebaseQuery {
