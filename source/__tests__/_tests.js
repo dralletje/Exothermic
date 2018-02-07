@@ -220,6 +220,24 @@ export default createFirebase => {
       expectVal(handler).toEqual({ Michiel: 21, Arne: 21 });
     })
 
+    it('should work with .orderByKey and .limitToFirst(1)', () => {
+      let handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: {  '20': 'Michiel', '10': 'Tim', '30': 'Arne' },
+      })
+      fb.child(`users`).orderByKey().limitToFirst(1).on('value', handler)
+      expectVal(handler).toEqual({ '10': 'Tim' });
+    })
+
+    it('should work with .orderByKey and .limitToLast(1)', () => {
+      let handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: {  '20': 'Michiel', '10': 'Tim', '30': 'Arne' },
+      })
+      fb.child(`users`).orderByKey().limitToLast(1).on('value', handler)
+      expectVal(handler).toEqual({ '30': 'Arne' });
+    })
+
     it('should work with .on("child_removed")', () => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({

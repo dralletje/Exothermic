@@ -3,9 +3,16 @@ import DataSnapshot from './datasnapshot'
 
 import pushId from './pushId'
 
+import fp from 'lodash/fp';
 import { fromPairs, toPairs, isEqual, difference, intersection } from 'lodash';
 
 const possibleEvents = ['value', 'child_removed', 'child_added'];
+
+let precondition = (condition, message = `Unmet precondition`) => {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
 
 const timeout = (fn, delay) => {
   if (delay === 0) {
@@ -19,37 +26,71 @@ const timeout = (fn, delay) => {
   }
 }
 
-const is_valid_query = ({ orderBy, equalTo }) => {
+const is_valid_query = ({ orderBy, equalTo, limit }) => {
   if (orderBy != null) {
-    return equalTo != null;
+    return equalTo != null || limit != null;
   }
   return true;
 }
 
 let EXPLICIT_NULL = Symbol(`Explicitly set null`);
 
-const filter_by_query = (value, { orderBy, equalTo }) => {
-  let compare_fn = (x) => equalTo === EXPLICIT_NULL ? x == null : x === equalTo;
-
-  if (orderBy == null) {
-    return value;
+let match = (key, matchers) => {
+  if (key == null) {
+    return fp.identity;
+  }
+  if (key === '') {
+    throw new Error(`MATCH: Key can not be an empty string`)
+  }
+  let fn = matchers[key];
+  if (fn) {
+    return fn;
   } else {
-    if (orderBy.type === 'child') {
-      return fromPairs(
-        toPairs(value)
-        // TODO More sophisticated compare
-        .filter(([key, value]) => compare_fn(value[orderBy.child]))
-      );
-    } else if (orderBy.type === 'value') {
-      return fromPairs(
-        toPairs(value)
-        // TODO More sophisticated compare
-        .filter(([key, value]) => compare_fn(value))
-      );
+    if (matchers[match.any]) {
+      return matchers[match.any];
     } else {
-      throw new Error(`HUH ${orderBy.type}`)
+      throw new Error(`No match-er found for key '${key}' and no [match.any]: provided`);
     }
   }
+}
+match.any = Symbol(`Match any value`);
+match.null = Symbol(`Match null and undefined`);
+
+let tap = (fn) => (x) => {
+  fn(x);
+  return x;
+}
+
+const filter_by_query = (value, { orderBy, equalTo, limit }) => {
+  let compare_fn = match(equalTo, {
+    [EXPLICIT_NULL]: x => x == null,
+    [match.any]: x => x === equalTo,
+  });
+
+  let sort_fn = match(orderBy && orderBy.type, {
+    child: ({ value }) => value[orderBy.child],
+    value: ({ value }) => value,
+    key: ({ key }) => key,
+  })
+
+  return fp.flow(
+    () => value,
+
+    fp.toPairs,
+    fp.map(([key, value]) => {
+      return { key, value, sort_value: sort_fn({ key, value }) }
+    }),
+
+    fp.filter(({ sort_value }) => compare_fn(sort_value)),
+
+    match(limit && limit.type, {
+      first: limit && fp.take(limit.count),
+      last: limit && fp.takeRight(limit.count),
+    }),
+
+    fp.map(({ key, value }) => [key, value]), // undoes map
+    fp.fromPairs, // undoes toPairs
+  )();
 }
 
 let compare_objects = (prev, next) => {
@@ -111,7 +152,10 @@ class FirebaseQuery {
 
   _get_snapshot() {
     const value = this._parent.__get(this._key);
-    let filtered_value = filter_by_query(value, this._query);
+    let filtered_value =
+      isEqual(this._query, {})
+      ? value
+      : filter_by_query(value, this._query);
     return DataSnapshot({ key: this._key, value: filtered_value, ref: this });
   }
 
@@ -180,10 +224,31 @@ class FirebaseQuery {
       orderBy: { type: 'value' },
     });
   }
+  orderByKey() {
+    if (this._query.orderBy != null) {
+      throw new Error(`Query already ordered (by ${this._query.orderBy.type})`)
+    }
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
+      orderBy: { type: 'key' },
+    });
+  }
   equalTo(value) {
     return new FirebaseQuery(this._parent, this._key, this._options, {
       ...this._query,
       equalTo: value === null ? EXPLICIT_NULL : value,
+    });
+  }
+  limitToLast(n) {
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
+      limit: { type: 'last', count: n },
+    });
+  }
+  limitToFirst(n) {
+    return new FirebaseQuery(this._parent, this._key, this._options, {
+      ...this._query,
+      limit: { type: 'first', count: n },
     });
   }
 
@@ -269,8 +334,11 @@ const generate_id = (existing_keys) => {
   let keys_length = existing_keys.length;
 
   while (key == null || existing_keys.includes(key)) {
-    let key = new Buffer(String(Math.pow((1024 + incrementor) * (keys_length + 1), 2))).toString('base64').slice(0, 10).toUpperCase();
+    key = `key${incrementor}`;
     incrementor = incrementor + 1;
+    if (incrementor > 100) {
+      throw new Error(`DAMN lot of removes I guess? (key generator exhausted (100))`);
+    }
   }
   return key;
 }
