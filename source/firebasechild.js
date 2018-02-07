@@ -113,8 +113,29 @@ let compare_objects = (prev, next) => {
   return { removed, added, changed };
 }
 
+class FirebaseOndisconnect {
+  constructor(parent/*: FirebaseReference*/, options) {
+    this._parent = parent;
+    this._options = options;
+  }
+
+  __onChange(change) {
+    this._parent.__onChange({
+      ...change,
+      path: [],
+    });
+  }
+
+  set(value) {
+    this.__onChange({
+      type: 'ondisconnect',
+      change: { type: 'set', value },
+    });
+  }
+}
+
 class FirebaseQuery {
-  constructor(parent, key, options, query = {}) {
+  constructor(parent/*: FirebaseQuery | FirebaseReference*/, key, options, query = {}) {
     this._parent = parent;
     this._key = key;
     this._query = query;
@@ -213,6 +234,10 @@ class FirebaseQuery {
     } else {
       return value != null && value[prop] != null ? value[prop] : null;
     }
+  }
+
+  onDisconnect() {
+    return new FirebaseOndisconnect(this, this._options);
   }
 
   orderByChild(child) {

@@ -47,12 +47,13 @@ type T_Path = Array<string>;
 type T_FirebaseChange =
   | { type: 'set', path: T_Path, value: mixed }
   | { type: 'update', path: T_Path, value: { [key: string]: mixed } }
+  | { type: 'ondisconnect', change: T_FirebaseChange }
 */
 const apply_firebase_change = (change, data) => {
   let path = change.path.slice(1);
 
   if (change.type === 'set') {
-    return update(path, () => change.value, data);
+    return path.length === 0 ? change.value : update(path, () => change.value, data);
   } else if (change.type === 'update') {
     return update(path, (old_value) => {
       return { ...old_value, ...change.value };

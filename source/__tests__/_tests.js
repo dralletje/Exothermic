@@ -268,6 +268,21 @@ export default createFirebase => {
       expectVal(handler2).toEqual({ Michiel: 20, Tim: 10 });
     })
 
+    it('should work with .orderByValue, .startAt and .endAt combined', async () => {
+      let fb = createFirebase({
+        online_users: {},
+      });
+
+      fb.child('online_users/Michiel').set(true);
+      fb.child('online_users/Michiel').onDisconnect().set(null);
+
+      expect((await fb.child('online_users').once('value')).val()).toEqual({ Michiel: true });
+
+      fb.simulate_disconnect();
+
+      expect((await fb.child('online_users').once('value')).val()).toEqual({ });
+    })
+
     it('should work with .on("child_removed")', () => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
