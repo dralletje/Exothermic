@@ -211,6 +211,16 @@ export default createFirebase => {
       })
     })
 
+    it('should work with .orderByChild and .equalTo and child_removed', () => {
+      const handler = jest.genMockFunction();
+      let fb = createFirebase({
+        users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
+      })
+      fb.child(`users`).orderByChild('age').equalTo(21).on('child_removed', handler)
+      fb.child(`users/a/age`).set(22);
+      expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
+    })
+
     it('should work with .orderByValue and .equalTo', () => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
