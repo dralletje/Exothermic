@@ -1,46 +1,47 @@
 // NOTE lodash/fp so it is immutable update
-import { update } from 'lodash/fp'
+import { update } from "lodash/fp";
 
-import EventEmitter from './EventEmitter'
-import firebasechild from './firebasechild'
+import EventEmitter from "./EventEmitter";
+import firebasechild from "./firebasechild";
 
-const possibleEvents = ['value']
+const possibleEvents = ["value"];
 
 // TODO This really the best I can do? 🤷‍♀️
 const detect_array = (obj) => {
   let keys = Object.keys(obj);
-  return Array.from({ length: keys.length }).every((_, index) => keys.includes(String(index)));
-}
+  return Array.from({ length: keys.length }).every((_, index) =>
+    keys.includes(String(index))
+  );
+};
 
-const clean_object = object => {
-  if (!object || typeof object !== 'object') {
-    return object
+const clean_object = (object) => {
+  if (!object || typeof object !== "object") {
+    return object;
   }
 
   // Split the object in an array
   // TODO Some lodash-ness?
-  let cleaned =
-    Object.entries(object)
+  let cleaned = Object.entries(object)
     // My actual mutations I am interested in
-    .map(([k,v]) => [k, clean_object(v)])
+    .map(([k, v]) => [k, clean_object(v)])
     .filter(([k, v]) => v !== null)
     // Bring it back to an object
     .reduce((o, [k, v]) => {
-      o[k] = v
-      return o
-    }, {})
+      o[k] = v;
+      return o;
+    }, {});
 
   let keys = Object.keys(cleaned);
 
   // Object is empty after cleaning it's children... to bad
   if (keys.length === 0) {
-    return null
+    return null;
   } else if (detect_array(cleaned)) {
     return Array.from({ ...cleaned, length: keys.length });
   } else {
     return cleaned;
   }
-}
+};
 
 /*:flow
 type T_Path = Array<string>;
@@ -52,25 +53,31 @@ type T_FirebaseChange =
 const apply_firebase_change = (change, data) => {
   let path = change.path.slice(1);
 
-  if (change.type === 'set') {
-    return path.length === 0 ? change.value : update(path, () => change.value, data);
-  } else if (change.type === 'update') {
-    return update(path, (old_value) => {
-      return { ...old_value, ...change.value };
-    }, data);
+  if (change.type === "set") {
+    return path.length === 0
+      ? change.value
+      : update(path, () => change.value, data);
+  } else if (change.type === "update") {
+    return update(
+      path,
+      (old_value) => {
+        return { ...old_value, ...change.value };
+      },
+      data
+    );
   } else {
     throw new Error(`Unknown onChange type '${change.type}'`);
   }
-}
+};
 
-const exothermic = (initdata, { delay = 0, onChange } = {}) => {
+const exothermic = ({ data: initdata, delay = 0, onChange } = {}) => {
   let data = clean_object(initdata);
 
   let value_listener = null;
 
   const root = {
     __get: () => data,
-    __onChange: (change/*: T_FirebaseChange*/) => {
+    __onChange: (change /*: T_FirebaseChange*/) => {
       data = clean_object(apply_firebase_change(change, data));
       value_listener();
 
@@ -80,17 +87,27 @@ const exothermic = (initdata, { delay = 0, onChange } = {}) => {
     },
 
     on: (event, fn) => {
-      if (event === 'value') {
+      if (event === "value") {
         if (value_listener != null) {
-          throw new Error(`Can only have one 'value' listener on exothermic root`);
+          throw new Error(
+            `Can only have one 'value' listener on exothermic root`
+          );
         }
         value_listener = fn;
       }
     },
-  }
+  };
 
-  return firebasechild(root, null, {delay});
-}
+  let root_ref = firebasechild(root, null, { delay });
+
+  return {
+    database: () => {
+      return {
+        ref: () => root_ref,
+      };
+    },
+  };
+};
 
 // const exothermicLocalstorage = (initdata, window, {delay = 0} = {}) => {
 //   const getData = () => JSON.parse(window.localStorage.getItem('exothermic'))
@@ -122,4 +139,4 @@ const exothermic = (initdata, { delay = 0, onChange } = {}) => {
 // }
 //
 // exothermic.exothermicLocalstorage = exothermicLocalstorage
-export default exothermic
+export default exothermic;

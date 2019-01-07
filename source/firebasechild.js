@@ -194,14 +194,14 @@ class FirebaseQuery {
   ref() {
     return this._key === null ? this : this._parent.child(this._key);
   }
-  key() {
+  get key() {
     return this._key;
   }
-  parent() {
+  get parent() {
     return this._key === null ? null : this._parent;
   }
-  root() {
-    return this._key === null ? this : this._parent.root();
+  get root() {
+    return this._key === null ? this : this._parent.root;
   }
 
   _get_snapshot() {

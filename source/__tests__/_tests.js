@@ -17,38 +17,34 @@ const expectVal = (handler, call = 0) => {
 
 export default createFirebase => {
   describe('exothermic without delay', () => {
-    let firebase
-
-    beforeEach(() => {
-      firebase = createFirebase(data)
-    })
-
     it('should have a root key of null', () => {
-      let firebase = createFirebase(data);
-      expect(firebase.key()).toBe(null);
+      let firebase = createFirebase(data).database().ref();
+      expect(firebase.key).toBe(null);
     });
     it('should have a root parent of null', () => {
-      let firebase = createFirebase(data);
-      expect(firebase.parent()).toBe(null);
+      let firebase = createFirebase(data).database().ref();
+      expect(firebase.parent).toBe(null);
     });
 
     it('should have a working key()', () => {
-      let firebase = createFirebase(data);
-      expect(firebase.child('this').child('is').child('path').key()).toBe('path');
-      expect(firebase.child('other/path/with').key()).toBe('with');
+      let firebase = createFirebase(data).database().ref();
+      expect(firebase.child('this').child('is').child('path').key).toBe('path');
+      expect(firebase.child('other/path/with').key).toBe('with');
     });
     it('should have a working parent()', () => {
-      let firebase = createFirebase(data);
-      expect(firebase.child('this').child('is').child('path').parent().key()).toBe('is');
-      expect(firebase.child('other/path/with').parent().key()).toBe('path');    });
+      let firebase = createFirebase(data).database().ref();
+      expect(firebase.child('this').child('is').child('path').parent.key).toBe('is');
+      expect(firebase.child('other/path/with').parent.key).toBe('path');    });
 
     it('should call the event handler', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.on('value', handler)
       expect(handler).toBeCalled()
     })
 
     it('should just get me the whole root', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.on('value', handler)
       expectVal(handler).toEqual({
@@ -62,12 +58,14 @@ export default createFirebase => {
     })
 
     it('should support a propertie', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users`).on('value', handler)
       expectVal(handler).toEqual(data.users)
     })
 
     it('should support a path of properties', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/name`).on('value', handler)
       expectVal(handler).toBe('Michiel Dral')
@@ -78,6 +76,7 @@ export default createFirebase => {
     })
 
     it('should call the handler with new value when set', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/name`).on('value', handler)
       firebase.child(`users`).child('michiel/name').set('Da Rude')
@@ -85,6 +84,7 @@ export default createFirebase => {
     })
 
     it('should call parent listener when child value is set', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel`).on('value', handler)
       firebase.child(`users/michiel/name`).set('Da Rude')
@@ -96,6 +96,7 @@ export default createFirebase => {
     })
 
     it('should update value shallowly', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel`).on('value', handler)
       firebase.child(`users/michiel`).update({
@@ -109,6 +110,7 @@ export default createFirebase => {
     })
 
     it('should call child listener on update', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/age`).on('value', handler)
       firebase.child(`users/michiel`).update({
@@ -118,6 +120,7 @@ export default createFirebase => {
     })
 
     it('should mkdir -p like when setting deep on nonexisting', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/jake`).on('value', handler)
       firebase.child(`users/jake/name`).set('jake')
@@ -125,19 +128,21 @@ export default createFirebase => {
     })
 
     it('should return null when asking for non-existing key', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`this/key/does/not/exist`).on('value', handler)
       expectVal(handler).toEqual(null)
     })
 
     it('should return null when asking for an empty object', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`empty`).on('value', handler)
       expectVal(handler).toEqual(null)
     })
 
     it('should create unique id\'s', () => {
-      let firebase = createFirebase({ empty: {} });
+      let firebase = createFirebase({ empty: {} }).database().ref();
       let empty = firebase.child('empty');
       empty.push('1');
       empty.push('2');
@@ -149,13 +154,15 @@ export default createFirebase => {
     })
 
     it('should return the snapshot on push', () => {
-      const uid = firebase.child(`empty`).push('randomish value here').key()
+      let firebase = createFirebase(data).database().ref();
+      const uid = firebase.child(`empty`).push('randomish value here').key
       const handler = jest.genMockFunction()
       firebase.child(`empty/${uid}`).on('value', handler)
       expectVal(handler).toEqual('randomish value here')
     })
 
     it('should remove a item', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel`).on('value', handler)
       firebase.child(`users/michiel`).remove()
@@ -163,6 +170,7 @@ export default createFirebase => {
     })
 
     it('should remove a item and notify it\'s child', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel/age`).on('value', handler)
       firebase.child(`users/michiel`).remove()
@@ -170,6 +178,7 @@ export default createFirebase => {
     })
 
     it('should remove a child and no longer show it in the parent', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`users/michiel`).on('value', handler)
       firebase.child(`users/michiel/age`).remove()
@@ -177,6 +186,7 @@ export default createFirebase => {
     })
 
     it('should insert a object representing nested emptyness and show null', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`more_empty`).on('value', handler)
       firebase.child(`more_empty`).set({
@@ -187,6 +197,7 @@ export default createFirebase => {
     })
 
     it('should handle ultimate nested emptyness', () => {
+      let firebase = createFirebase(data).database().ref();
       const handler = jest.genMockFunction()
       firebase.child(`more_empty`).on('value', handler)
       firebase.child(`more_empty`).set({
@@ -203,7 +214,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
-      })
+      }).database().ref()
       fb.child(`users`).orderByChild('age').equalTo(21).on('value', handler)
       expectVal(handler).toEqual({
         a: { name: 'Michiel', age: 21 },
@@ -215,7 +226,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
-      })
+      }).database().ref()
       fb.child(`users`).orderByChild('age').equalTo(21).on('child_removed', handler)
       fb.child(`users/a/age`).set(22);
       expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
@@ -225,7 +236,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         users: { Michiel: 21, Arne: 21, Danique: 19 },
-      })
+      }).database().ref()
       fb.child(`users`).orderByValue().equalTo(21).on('value', handler)
       expectVal(handler).toEqual({ Michiel: 21, Arne: 21 });
     })
@@ -234,7 +245,7 @@ export default createFirebase => {
       let handler = jest.genMockFunction();
       let fb = createFirebase({
         users: {  '20': 'Michiel', '10': 'Tim', '30': 'Arne' },
-      })
+      }).database().ref()
       fb.child(`users`).orderByKey().limitToFirst(1).on('value', handler)
       expectVal(handler).toEqual({ '10': 'Tim' });
     })
@@ -243,7 +254,7 @@ export default createFirebase => {
       let handler = jest.genMockFunction();
       let fb = createFirebase({
         users: {  '20': 'Michiel', '10': 'Tim', '30': 'Arne' },
-      })
+      }).database().ref()
       fb.child(`users`).orderByKey().limitToLast(1).on('value', handler)
       expectVal(handler).toEqual({ '30': 'Arne' });
     })
@@ -251,7 +262,7 @@ export default createFirebase => {
     it('should work with .orderByValue and .limitToFirst(1)', () => {
       let fb = createFirebase({
         users: {  Tim: 10, Arne: 30, Michiel: 20 },
-      })
+      }).database().ref()
 
       // Make sure the .orderByValue actually has effect,
       // and was not just already how it was ordered
@@ -267,7 +278,7 @@ export default createFirebase => {
     it('should work with .orderByValue, .startAt and .endAt combined', () => {
       let fb = createFirebase({
         users: {  Tim: 10, Arne: 30, Michiel: 20 },
-      })
+      }).database().ref()
 
       let handler = jest.genMockFunction();
       fb.child(`users`).orderByValue().startAt(20).endAt(30).on('value', handler)
@@ -281,7 +292,7 @@ export default createFirebase => {
     it('should work with .onDisconnect', async () => {
       let fb = createFirebase({
         online_users: { Arne: true },
-      });
+      }).database().ref();
 
       fb.child('online_users/Michiel').set(true);
       fb.child('online_users/Michiel').onDisconnect().set(null);
@@ -297,7 +308,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
-      })
+      }).database().ref()
       fb.child(`users`).on('child_removed', handler)
       fb.child('users').child('a').remove();
       expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
@@ -307,7 +318,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         users: { a: { name: 'Michiel', age: 21 }, b: { name: 'Arne', age: 21 }, c: { name: 'Danique', age: 19 } },
-      })
+      }).database().ref()
       fb.child(`users`).on('child_added', handler)
       expectVal(handler).toEqual({ name: 'Michiel', age: 21 });
       expectVal(handler, 1).toEqual({ name: 'Arne', age: 21 });
@@ -318,7 +329,7 @@ export default createFirebase => {
       const handler = jest.genMockFunction();
       let fb = createFirebase({
         first_primes: [2, 3, 5, 7, 11],
-      })
+      }).database().ref()
       fb.child(`first_primes`).on('value', handler)
       expectVal(handler).toEqual([2, 3, 5, 7, 11]);
     })

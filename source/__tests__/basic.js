@@ -4,6 +4,9 @@ jest
 const tests = require('./_tests').default
 const exothermic = require('../exothermic').default
 
-tests(data =>
-  exothermic(data, {delay: -1})
-)
+tests(data =>{
+  return exothermic({
+    delay: -1,
+    data: data,
+  })
+})

@@ -49,10 +49,10 @@ const datasnapshot = ({key, value, ref}) => {
 
   return {
     val: valMethod,
-    key: keyMethod,
-    ref: refMethod,
     exportVal: valMethod,
-    name: keyMethod,
+    get key() { return keyMethod() },
+    get name() { return keyMethod() },
+    get ref() { return refMethod() },
     child, forEach, hasChild,
     hasChildren, numChildren,
     getPriority, exists,

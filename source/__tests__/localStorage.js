@@ -40,7 +40,13 @@ const windowMock = (() => {
   }
 })()
 
-const createFirebase = data => exothermic(data, windowMock, {delay: -1})
+const createFirebase = data => {
+  return exothermic({
+    data: data,
+    windowMock: windowMock,
+    delay: -1,
+  });
+};
 
 // Standard tests
 tests(createFirebase)
@@ -58,14 +64,9 @@ const expectVal = (handler, call = 0) => {
 }
 
 describe('Localstorage', () => {
-  let firebase
-
-  beforeEach(() => {
-    firebase = createFirebase(data)
-  })
-
   it('should update the data after a storage event', () => {
     const handler = jest.genMockFunction()
+    let firebase = createFirebase(data).database().ref();
     firebase.child('numbers/hundred').on('value', handler)
     windowMock.__updateStorage({
       numbers: {
