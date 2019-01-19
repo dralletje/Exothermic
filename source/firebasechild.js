@@ -6,7 +6,7 @@ import pushId from './pushId'
 import fp from 'lodash/fp';
 import { isEqual, difference, intersection } from 'lodash';
 
-const DISCONNECT_EVENT = Symbol(`Disconnect event`);
+export const DISCONNECT_EVENT = Symbol(`Disconnect event`);
 const possibleEvents = ['value', 'child_removed', 'child_added', DISCONNECT_EVENT];
 
 let precondition = (condition, message = `Unmet precondition`) => {
@@ -230,7 +230,8 @@ class FirebaseQuery {
     if (event === 'value') {
       timeout(_ => fn(this._get_snapshot()), this._options.delay);
     }
-    return this._emitter.on(event, fn)
+
+    return this._emitter.on(event, fn);
   }
   once(event, fn) {
     if (!is_valid_query(this._query)) {
@@ -393,14 +394,15 @@ class FirebaseChild extends FirebaseQuery {
 
 const generate_id = (existing_keys) => {
   let key = null;
+  let date = Date.now();
   let incrementor = 0;
   let keys_length = existing_keys.length;
 
   while (key == null || existing_keys.includes(key)) {
-    key = `key${incrementor}`;
+    key = `key_${date}_${incrementor}`;
     incrementor = incrementor + 1;
     if (incrementor > 100) {
-      throw new Error(`DAMN lot of removes I guess? (key generator exhausted (100))`);
+      throw new Error(`DAMN, couldn't find a new key in this collection, I tried 100!`);
     }
   }
   return key;

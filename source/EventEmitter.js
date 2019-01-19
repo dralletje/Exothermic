@@ -8,7 +8,7 @@ const EventEmitter = events => {
 
   const ensureEvent = event => {
     if (eventListeners[event] === undefined) {
-      throw new Error(`Event ${event} does not exist on this emitter`)
+      throw new Error(`Event ${String(event)} does not exist on this emitter`)
     }
   }
 

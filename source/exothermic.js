@@ -2,7 +2,7 @@
 import { update } from "lodash/fp";
 
 import EventEmitter from "./EventEmitter";
-import firebasechild from "./firebasechild";
+import firebasechild, { DISCONNECT_EVENT } from "./firebasechild";
 
 const possibleEvents = ["value"];
 
@@ -73,39 +73,40 @@ const apply_firebase_change = (change, data) => {
 const exothermic = ({ data: initdata, delay = 0, onChange } = {}) => {
   let data = clean_object(initdata);
 
-  let value_listener = null;
+  let value_listener = EventEmitter(['value', DISCONNECT_EVENT]);
 
-  const root = {
+  let root = {
     __get: () => data,
     __onChange: (change /*: T_FirebaseChange*/) => {
       data = clean_object(apply_firebase_change(change, data));
-      value_listener();
+      value_listener.emit('value');
 
       if (onChange) {
         onChange({ change, data });
       }
     },
-
-    on: (event, fn) => {
-      if (event === "value") {
-        if (value_listener != null) {
-          throw new Error(
-            `Can only have one 'value' listener on exothermic root`
-          );
-        }
-        value_listener = fn;
-      }
-    },
+    on: value_listener.on,
   };
-
   let root_ref = firebasechild(root, null, { delay });
 
+  let sidestep_root = {
+    __get: () => data,
+    __onChange: (change /*: T_FirebaseChange*/) => {
+      data = clean_object(apply_firebase_change(change, data));
+      value_listener.emit('value');
+    },
+    on: value_listener.on,
+  };
+  let sidestep_root_ref = firebasechild(sidestep_root, null, { delay });
+
   return {
+    initializeApp: () => {},
     database: () => {
       return {
         ref: () => root_ref,
       };
     },
+    sidestep_database: sidestep_root_ref,
   };
 };
 
