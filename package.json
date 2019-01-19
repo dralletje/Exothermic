@@ -1,6 +1,6 @@
 {
   "name": "exothermic",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Firebase.js mock with javascript object input",
   "main": "index.js",
   "dependencies": {
@@ -37,7 +37,10 @@
     ]
   },
   "babel": {
-    "presets": ["env", "stage-2"]
+    "presets": [
+      "env",
+      "stage-2"
+    ]
   },
   "homepage": "https://github.com/dralletje/exothermic#readme"
 }
