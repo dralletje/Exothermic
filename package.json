@@ -32,8 +32,12 @@
   "jest": {
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/build/"
+      "/build/",
+      ".*.setup.js"
     ]
+  },
+  "babel": {
+    "presets": ["env", "stage-2"]
   },
   "homepage": "https://github.com/dralletje/exothermic#readme"
 }

@@ -34,7 +34,8 @@ export default createFirebase => {
     it('should have a working parent()', () => {
       let firebase = createFirebase(data).database().ref();
       expect(firebase.child('this').child('is').child('path').parent.key).toBe('is');
-      expect(firebase.child('other/path/with').parent.key).toBe('path');    });
+      expect(firebase.child('other/path/with').parent.key).toBe('path');
+    });
 
     it('should call the event handler', () => {
       let firebase = createFirebase(data).database().ref();

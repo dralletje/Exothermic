@@ -1,7 +1,4 @@
-jest
-  .dontMock('./_tests')
-
-const tests = require('./_tests').default
+const tests = require('./suite.setup.js').default
 const exothermic = require('../exothermic').default
 
 tests(data =>{
