@@ -2,9 +2,7 @@
 import { update } from "lodash/fp";
 
 import EventEmitter from "./EventEmitter";
-import firebasechild, { DISCONNECT_EVENT } from "./firebasechild";
-
-const possibleEvents = ["value"];
+import firebasechild, { DISCONNECT_EVENT, INTERNAL_VALUE_EVENT } from "./firebasechild";
 
 // TODO This really the best I can do? 🤷‍♀️
 const detect_array = (obj) => {
@@ -73,13 +71,13 @@ const apply_firebase_change = (change, data) => {
 const exothermic = ({ data: initdata, delay = 0, onChange } = {}) => {
   let data = clean_object(initdata);
 
-  let value_listener = EventEmitter(['value', DISCONNECT_EVENT]);
+  let value_listener = EventEmitter([INTERNAL_VALUE_EVENT, DISCONNECT_EVENT]);
 
   let root = {
     __get: () => data,
     __onChange: (change /*: T_FirebaseChange*/) => {
       data = clean_object(apply_firebase_change(change, data));
-      value_listener.emit('value');
+      value_listener.emit(INTERNAL_VALUE_EVENT);
 
       if (onChange) {
         onChange({ change, data });
@@ -93,7 +91,7 @@ const exothermic = ({ data: initdata, delay = 0, onChange } = {}) => {
     __get: () => data,
     __onChange: (change /*: T_FirebaseChange*/) => {
       data = clean_object(apply_firebase_change(change, data));
-      value_listener.emit('value');
+      value_listener.emit(INTERNAL_VALUE_EVENT);
     },
     on: value_listener.on,
   };
@@ -107,6 +105,12 @@ const exothermic = ({ data: initdata, delay = 0, onChange } = {}) => {
       };
     },
     sidestep_database: sidestep_root_ref,
+
+    // This removes all the user event listeners, but does keep
+    // all the events between parents and children.
+    removeListeners: () => {
+      root_ref.removeAllListeners();
+    },
   };
 };
 

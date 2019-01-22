@@ -7,7 +7,12 @@ import fp from 'lodash/fp';
 import { isEqual, difference, intersection } from 'lodash';
 
 export const DISCONNECT_EVENT = Symbol(`Disconnect event`);
-const possibleEvents = ['value', 'child_removed', 'child_added', DISCONNECT_EVENT];
+// This special 'value' event is necessary, because I need to preserve this
+// When cleaning all the other listeners. If I remove this event as well,
+// children will just be orphaned and not respond to parent changes ever again.
+// prettier-ignore
+export const INTERNAL_VALUE_EVENT = Symbol(`Value communication between parents and children`);
+const possibleEvents = ['value', INTERNAL_VALUE_EVENT, 'child_removed', 'child_added', DISCONNECT_EVENT];
 
 let precondition = (condition, message = `Unmet precondition`) => {
   if (!condition) {
@@ -171,12 +176,13 @@ class FirebaseQuery {
 
     // If parent changes, you change too
     //@TODO Remove handler on garbage collect? idk?
-    this._parent.on('value', () => {
+    this._parent.on(INTERNAL_VALUE_EVENT, () => {
       let old_snapshot = this._current_snapshot;
       let snapshot = this._get_snapshot();
       let { added, removed, changed } = compare_objects(old_snapshot.val(), snapshot.val());
 
       this._current_snapshot = snapshot;
+      this._emitter.emit(INTERNAL_VALUE_EVENT, snapshot);
       this._emitter.emit('value', snapshot);
 
       // console.log(`old_val, val:`, old_val, val)
@@ -227,7 +233,7 @@ class FirebaseQuery {
         });
       }, this._options.delay);
     }
-    if (event === 'value') {
+    if (event === 'value' || event === INTERNAL_VALUE_EVENT) {
       timeout(_ => fn(this._get_snapshot()), this._options.delay);
     }
 
@@ -237,16 +243,28 @@ class FirebaseQuery {
     if (!is_valid_query(this._query)) {
       throw new Error(`Invalid query!`);
     }
-    // // Go back to your non-realtime relation database!
-    // throw new Error('You really shouldn\'t use once.')
 
-    if (event === 'value') {
+    if (event === 'value' || event === INTERNAL_VALUE_EVENT) {
       if (fn) {
-        timeout(_ => fn(this._get_snapshot()), this._options.delay);
+        timeout(() => fn(this._get_snapshot()), this._options.delay);
       }
       return Promise.resolve(this._get_snapshot());
     } else {
       throw new Error(`This doesn't make sense I guess`);
+    }
+  }
+
+  // Mostly just for testing to reset all user listeners
+  // NOTE This keeps `INTERNAL_VALUE_EVENT` events, because those
+  // .... are not added by the user, but by the system for the parent:child structure
+  removeAllListeners() {
+    for (let event of this._emitter.eventNames()) {
+      if (event !== INTERNAL_VALUE_EVENT) {
+        this._emitter.removeAllListeners(event);
+      }
+    }
+    for (let child of Object.values(this._children)) {
+      child.removeAllListeners();
     }
   }
 
@@ -394,7 +412,7 @@ class FirebaseChild extends FirebaseQuery {
 
 const generate_id = (existing_keys) => {
   let key = null;
-  let date = Date.now();
+  let date = Math.floor(Date.now() / 1000);
   let incrementor = 0;
   let keys_length = existing_keys.length;
 
