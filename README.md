@@ -1,29 +1,39 @@
 # Exothermic
 
-A small library to create firebase server for local development and testing.
+Simulate the firebase javascript sdk in memory, for testing or local development.
 
 ```
-$ npm install exothermic
+$ npm install exothermic --save-dev
 ```
 
-**old**
-```
-import Firebase from 'firebase'
+### Initialize exothermic
 
-const FIREBASE_URL = '...'
-let firebase = new Firebase(FIREBASE_URL)
+Exothermic takes some options, that you provide to exothermic only once
+
+```
+let exothermic = require('exothermic');
+
+let firebase = exothermic({
+  // Initial data, can also be set using `firebase.database().ref().set(...)`
+  data: {},
+  // Set delay to anything above 0 to make every event listener async using `setTimeout(..., delay)`:
+  // This could be useful to simulate a more realistic connection
+  delay: -1,
+  // This gets called on every change that is being applied to the database,
+  // useful to track these while testing.
+  // `type change = { path: Array<String>, type: "set" | "update", value: mixed }`
+  onChange: ({ change }) => {},
+});
 ```
 
-**new**
-```
-import exothermic from 'exothermic'
+then export or use this as a mock in the rest of your code,
+where you like always will do
 
-const initialdata = {
-  ...
-}
-let firebase = exothermic(initialdata)
 ```
-
+firebase.initializeApp({
+  // ... All these options are ignored anyway
+})
+```
 
 ### TODO
 
@@ -65,7 +75,7 @@ Not yet the whole API is mocked, because I think there are some parts that I don
 - [ ] ~~cancel()~~ **Don't think this is necessary**
 
 **Firebase.ServerValue (Constants)**
-- [ ] ~~TIMESTAMP~~
+- [ ] ~~TIMESTAMP~~ **Could make this work but would just be `Date.now() - delay`
 
 **DataSnapshot (Methods)**
 - [x] exists()
